@@ -62,12 +62,33 @@ node docs/isolation/tools/run-with-fingerprint.mjs --label my-label -- node <你
 
 ## 三、⚠️ 两个必须知道的坑（实测得出）
 
-### 坑 1：命令带 shell 重定向（`>`）时，hook 不会被调用
+### 坑 1：规则只对「会被询问的命令」起作用
 
-产品的权限判定里，**带重定向的命令被判为高风险**（`mode.build.highRisk`），其 `approvalMode` 是 `user-once`，而 `runHooks` 的条件是 `hooksAvailable && approvalMode !== "user-once"` ⇒ **hook 被跳过**，你的规则不会生效。
+ZCode 自带**只读命令白名单**（`echo`、`ls`、`git status` 等）—— 这些命令走**免询问**路径，产品直接放行，压根不进入权限询问环节，hook 也就没有参与机会。
 
-⇒ 验证 allow 规则时，**用不带 `>` 的命令**（例如 `touch <file>` 而不是 `echo x > <file>`）。这不是本插件的缺陷，是产品的既有语义。
+⇒ 想验证你的 allow 规则，用**确实会被询问**的命令，例如 `touch <file>`、`git -C <dir> status`、`rm <file>`。
+⇒ 实测对照（同一会话、同一份规则）：
 
+| 命令形态 | hook 是否介入 |
+| --- | --- |
+| `touch <file>` | ✅ 介入（`reason=Allowed by PermissionRequest hook`） |
+| `git -C <绝对路径> status` | ✅ 介入 |
+| `echo x > <file>`（带重定向） | ✅ 介入 |
+| `echo x` / `ls` / `git status`（无 `-C`） | ❌ 不介入（产品判定为只读免询问） |
+
+> 早期版本的本文件曾写「带重定向的命令 hook 不触发」—— **该结论是错的**，已由上表实测推翻。真实机制是「只读白名单免询问」，与重定向无关。
+
+### 坑 1b：`commandPattern` 的正则转义与锚点
+
+规则表里的 `commandPattern` 是**正则**，有两个高频陷阱：
+
+| 写法 | 落盘 | 效果 |
+| --- | --- | --- |
+| JSON 里 `"\\."` | `\.` | ✅ 匹配字面点号 |
+| JSON 里 `"\\\\."` | `\\.` | ❌ 匹配字面反斜杠 ⇒ 永不命中 ⇒ 表现为 abstain |
+| `^touch$` | — | ❌ 实际命令常带引号与路径（`touch "C:/…/x"`）⇒ 不匹配 |
+
+⇒ 在面板里直接写 `\.` 与 `touch .*probe-file` 这类宽松写法，别在 JSON 层面手动加转义。
 ### 坑 2：升级前必须先更新市场清单的 `ref`
 
 市场清单里 `source.ref` 锁定了版本。上游发了新 tag 之后，若清单还指向旧 tag，`plugins install` 装到的**仍是旧版本**。
