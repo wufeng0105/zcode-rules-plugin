@@ -22,6 +22,14 @@ const REFERENCE_FILES = [
   "src/hooks/permission-rules.mjs",
 ];
 
+/** docs/selfcheck 下的副本与 src/ 原件的对应关系（verify-fidelity 校验这一致性）。 */
+const COPY_PAIRS = [
+  ["docs/selfcheck/rules/rules-engine.mjs", "src/rules/rules-engine.mjs"],
+  ["docs/selfcheck/rules/agents-section.mjs", "src/rules/agents-section.mjs"],
+  ["docs/selfcheck/rules/export-agents.mjs", "src/rules/export-agents.mjs"],
+  ["docs/selfcheck/hooks/permission-rules.mjs", "src/hooks/permission-rules.mjs"],
+];
+
 const tempRoots = [];
 function tempRoot(prefix) {
   const dir = mkdtempSync(join(tmpdir(), `zcode-rules-${prefix}-`));
@@ -48,6 +56,12 @@ function seedReferenceTree(root) {
     const target = join(root, ...rel.split("/"));
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, readFileSync(join(REPO_ROOT, ...rel.split("/"))));
+  }
+  // 副本也要在临时根里（verify-fidelity 现在同时校验「副本 ≡ 原件」）
+  for (const [copyRel, originRel] of COPY_PAIRS) {
+    const copyTarget = join(root, ...copyRel.split("/"));
+    mkdirSync(dirname(copyTarget), { recursive: true });
+    writeFileSync(copyTarget, readFileSync(join(root, ...originRel.split("/"))));
   }
 }
 
@@ -84,6 +98,30 @@ describe("verify-fidelity.mjs（参照实现保真）", () => {
     const run = runScript(FIDELITY_SCRIPT, ["--root", root]);
     assert.equal(run.status, 1, run.output);
     assert.match(run.output, /FAIL  src\/rules\/agents-section\.mjs/u);
+  });
+
+  test("变异③：docs/selfcheck 副本被改（原件不动）→ exit 1（防两份参照实现悄悄漂移）", () => {
+    const root = tempRoot("fid-copy-drift");
+    seedReferenceTree(root);
+    const [copyRel] = COPY_PAIRS[0];
+    const copyTarget = join(root, ...copyRel.split("/"));
+    writeFileSync(copyTarget, `${readFileSync(copyTarget, "utf8")}\n// copy drift\n`, "utf8");
+
+    const run = runScript(FIDELITY_SCRIPT, ["--root", root]);
+    assert.equal(run.status, 1, run.output);
+    assert.match(run.output, /FAIL  docs\/selfcheck\/rules\/rules-engine\.mjs/u);
+    assert.match(run.output, /副本必须与 src\/ 原件逐字节相同/u);
+  });
+
+  test("fail-closed：副本缺失 → exit 1 并点名（不静默跳过副本检查）", () => {
+    const root = tempRoot("fid-copy-missing");
+    seedReferenceTree(root);
+    rmSync(join(root, ...COPY_PAIRS[1][0].split("/")), { force: true });
+
+    const run = runScript(FIDELITY_SCRIPT, ["--root", root]);
+    assert.equal(run.status, 1, run.output);
+    assert.match(run.output, /FAIL  docs\/selfcheck\/rules\/agents-section\.mjs/u);
+    assert.match(run.output, /文件缺失/u);
   });
 
   test("fail-closed：基线少一条（删掉一条只留 3 条）→ exit 1，不报「全部一致」", () => {

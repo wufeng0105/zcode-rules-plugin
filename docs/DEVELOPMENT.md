@@ -107,7 +107,7 @@ CI（`../.github/workflows/ci.yml`）跑的就是这三步，`ubuntu-latest` + N
 node ../scripts/verify-fidelity.mjs
 ```
 
-脚本 **fail-closed**：基线缺条目、多出清单外条目、值非法、文件缺失或读失败，任一即 exit 1。**不要为了让校验通过而删基线条目** —— 那等于让校验静默失效。确需更新基线时用 `node ../scripts/verify-fidelity.mjs --list` 重新生成，并在 PR 里说明原因。
+脚本 **fail-closed**：基线缺条目、多出清单外条目、值非法、文件缺失或读失败，任一即 exit 1。它同时校验 **`docs/selfcheck/` 副本与 `src/` 原件逐字节相同**（副本不在基线里，没有这道检查就会悄悄漂移）。**不要为了让校验通过而删基线条目** —— 那等于让校验静默失效。确需更新基线时用 `node ../scripts/verify-fidelity.mjs --list` 重新生成，并在 PR 里说明原因。
 
 ## P-8 升级模拟
 

@@ -139,6 +139,46 @@ for (const file of REFERENCE_FILES) {
   }
 }
 
+// ---- docs/selfcheck 副本一致性 ----
+// 为什么加这条：`docs/selfcheck/` 下有同一批参照实现的**副本**（供第三方对照阅读）。
+//   副本不在 FIDELITY.json 的基线里 ⇒ 改副本不会被任何检查发现 ⇒ 两份代码会悄悄漂移。
+//   规则：**副本必须与 src/ 原件逐字节相同**。
+const COPY_PAIRS = Object.freeze([
+  ["docs/selfcheck/rules/rules-engine.mjs", "src/rules/rules-engine.mjs"],
+  ["docs/selfcheck/rules/agents-section.mjs", "src/rules/agents-section.mjs"],
+  ["docs/selfcheck/rules/export-agents.mjs", "src/rules/export-agents.mjs"],
+  ["docs/selfcheck/hooks/permission-rules.mjs", "src/hooks/permission-rules.mjs"],
+]);
+process.stdout.write("# docs/selfcheck 副本与 src/ 原件一致性\n");
+for (const [copyPath, originPath] of COPY_PAIRS) {
+  const copyFile = join(opts.root, copyPath);
+  const originFile = join(opts.root, originPath);
+  if (!existsSync(copyFile) || !existsSync(originFile)) {
+    failed += 1;
+    process.stdout.write(`FAIL  ${copyPath}\n      文件缺失（副本或原件）\n`);
+    continue;
+  }
+  let copySha;
+  let originSha;
+  try {
+    copySha = sha256File(copyFile);
+    originSha = sha256File(originFile);
+  } catch (error) {
+    failed += 1;
+    process.stdout.write(`FAIL  ${copyPath}\n      读失败：${String(error?.message ?? error)}\n`);
+    continue;
+  }
+  if (copySha === originSha) {
+    process.stdout.write(`ok    ${copyPath}  ≡  ${originPath}\n`);
+  } else {
+    failed += 1;
+    process.stdout.write(
+      `FAIL  ${copyPath}\n      副本 sha256=${copySha}\n      原件 sha256=${originSha}\n` +
+        "      副本必须与 src/ 原件逐字节相同（两份参照实现漂移会让对照阅读失真）。\n",
+    );
+  }
+}
+
 process.stdout.write(
   failed === 0
     ? `结论：${REFERENCE_FILES.length} 个参照实现逐字节一致（exit 0）\n`
