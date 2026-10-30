@@ -4,6 +4,9 @@
 
 # zcode-rules-plugin
 
+[![CI](https://github.com/wufeng0105/zcode-rules-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/wufeng0105/zcode-rules-plugin/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **一句话**：把「一份规则源、两个出口」做成 ZCode 插件——同一个规则 JSON 既供 `PermissionRequest` hook 判 allow/deny/退赛，又投影成 `AGENTS.md` 里给人读的规则段；内容策略以自由文本形式走同一套双哨兵投影。
 
 **你会得到什么**
