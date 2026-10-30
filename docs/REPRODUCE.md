@@ -94,9 +94,9 @@ node docs/isolation/tools/run-with-fingerprint.mjs --label my-label -- node <你
 
 | 脚本 | 覆盖判据 | 需要的环境变量 |
 | --- | --- | --- |
-| `scripts/proof/dod-remaining.mjs` | D-1 / D-2 / D-4 / D-7b / D-8 | `ZCODE_CLI_ENTRY`、`ZCODE_INSTALL_DIR`（可省略，取 Windows 默认安装位置） |
-| `scripts/proof/d3-real-session.mjs` | D-3 | `ZCODE_CLI_ENTRY`、`ZCODE_WORKSPACE`（会话工作区） |
-| `scripts/proof/p8-real-upgrade.mjs` | D-7a（P-8 真实升级） | `ZCODE_CLI_ENTRY`、`ZCODE_INSTALL_DIR` |
+| `../scripts/proof/dod-remaining.mjs` | D-1 / D-2 / D-4 / D-7b / D-8 | `ZCODE_CLI_ENTRY`、`ZCODE_INSTALL_DIR`（可省略，取 Windows 默认安装位置） |
+| `../scripts/proof/d3-real-session.mjs` | D-3 | `ZCODE_CLI_ENTRY`、`ZCODE_WORKSPACE`（会话工作区） |
+| `../scripts/proof/p8-real-upgrade.mjs` | D-7a（P-8 真实升级） | `ZCODE_CLI_ENTRY`、`ZCODE_INSTALL_DIR` |
 
 跑法（示例）：
 
