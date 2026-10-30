@@ -36,6 +36,7 @@
 | 面板在哪、按钮是什么意思 | 本文「面板在哪」「面板有什么」两节 |
 | 规则/策略没生效怎么查 | 本文「常见问题」「故障排查」两节 |
 | **这个插件真的生效吗？验证过什么？** | [docs/VERIFICATION.md](docs/VERIFICATION.md) |
+| **想自己复跑这些验证？** | [docs/REPRODUCE.md](docs/REPRODUCE.md) |
 | 想改代码 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | 发现安全问题 | [SECURITY.md](SECURITY.md) |
 | 版本变化 | [CHANGELOG.md](CHANGELOG.md) |

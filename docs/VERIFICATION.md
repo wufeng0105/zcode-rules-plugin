@@ -111,7 +111,7 @@ GitHub Actions（ubuntu-latest + Node 24，零依赖安装）跑三步：
 | `node scripts/check-docs.mjs` | 文档相对链接与仓库内路径引用存在 |
 | `node --test tests/` | 169 例（含两个校验脚本的**红绿双向**用例） |
 
-CI 是**回归防线**，不是运行期证据源 —— 运行期判据需要真实 ZCode 安装与 GUI 环境，只能在本地跑（隔离配方见 `docs/zcode-mod/isolation/RECIPE.md`）。
+CI 是**回归防线**，不是运行期证据源 —— 运行期判据需要真实 ZCode 安装与 GUI 环境，只能在本地跑（隔离配方见 `isolation/RECIPE.md`）。
 
 ## 十、本插件没有覆盖的范围（如实声明）
 
