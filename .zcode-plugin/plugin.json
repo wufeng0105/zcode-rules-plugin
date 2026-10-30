@@ -1,6 +1,6 @@
 {
   "name": "zcode-rules",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "license": "MIT",
   "description": "ZCode 规则插件：一份规则源、两个出口（权限 hook 判定 + AGENTS.md 双哨兵投影）。One rules source, two exits: a PermissionRequest hook and dual-sentinel AGENTS.md projection.",
   "hooks": {
@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${ZCODE_PLUGIN_ROOT}/src/hooks/permission-rules.mjs\" --rules \"${ZCODE_PLUGIN_DATA}/rules.json\" --watchdog-ms 120000"
+            "command": "node \"${ZCODE_PLUGIN_ROOT}/src/hooks/permission-rules-entry.mjs\" --data \"${ZCODE_PLUGIN_DATA}\" --root \"${ZCODE_PLUGIN_ROOT}\" --watchdog-ms 120000"
           }
         ]
       }

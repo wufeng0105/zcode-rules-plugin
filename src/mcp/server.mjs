@@ -105,13 +105,17 @@ export const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "selfcheck_run",
     description:
-      "运行自检：规则合法性 / 内容策略状态 / 两段投影一致性（手改提示）/ AGENTS.md 尺寸 >90KiB 预警 / 版本号。只读。",
+      "运行自检：规则合法性 / 内容策略状态 / 两段投影一致性（手改提示）/ AGENTS.md 尺寸 >90KiB 预警 / 版本号 / config 无手工 PermissionRequest 接线。只读。",
     inputSchema: {
       type: "object",
       properties: {
         agentsPath: {
           type: "string",
           description: "覆盖 AGENTS.md 路径（默认 os.homedir()/.zcode/AGENTS.md；测试用）",
+        },
+        configPath: {
+          type: "string",
+          description: "覆盖 CLI config 路径（默认 os.homedir()/.zcode/cli/config.json；测试用）",
         },
       },
       additionalProperties: false,
@@ -269,7 +273,11 @@ async function callTool(name, args, context) {
         typeof args.agentsPath === "string" && args.agentsPath.trim() !== ""
           ? args.agentsPath
           : defaultAgentsPath();
-      const result = runSelfcheck({ agentsPath, dataDir: context.dataDir });
+      const configPath =
+        typeof args.configPath === "string" && args.configPath.trim() !== ""
+          ? args.configPath
+          : undefined;
+      const result = runSelfcheck({ agentsPath, configPath, dataDir: context.dataDir });
       return { data: result, isError: !result.ok };
     }
     default:
@@ -317,11 +325,17 @@ function validateToolArguments(name, rawArgs) {
       };
     }
     case "selfcheck_run":
-      assertAllowedArgs(rawArgs, ["agentsPath"]);
+      assertAllowedArgs(rawArgs, ["agentsPath", "configPath"]);
       if (rawArgs.agentsPath !== undefined && typeof rawArgs.agentsPath !== "string") {
         throw new RpcError(ERROR_CODES.invalidParams, "agentsPath 必须是字符串");
       }
-      return rawArgs.agentsPath === undefined ? {} : { agentsPath: rawArgs.agentsPath };
+      if (rawArgs.configPath !== undefined && typeof rawArgs.configPath !== "string") {
+        throw new RpcError(ERROR_CODES.invalidParams, "configPath 必须是字符串");
+      }
+      return {
+        ...(rawArgs.agentsPath === undefined ? {} : { agentsPath: rawArgs.agentsPath }),
+        ...(rawArgs.configPath === undefined ? {} : { configPath: rawArgs.configPath }),
+      };
     default:
       throw new RpcError(ERROR_CODES.invalidParams, `未知工具：${name}`);
   }

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "name": "内置空规则（未配置时使用）",
+  "unmatched": "abstain",
+  "onTimeout": "deny",
+  "watchdogMs": 120000,
+  "rules": []
+}

@@ -344,7 +344,7 @@ test("tools/call selfcheck_run：返回 checks 与 summary", async () => {
         name: "export_agents",
       });
       const response = await session.request("tools/call", {
-        arguments: { agentsPath },
+        arguments: { agentsPath, configPath: join(dataDir, "cli-config.json") },
         name: "selfcheck_run",
       });
       assert.equal(response.result.isError, false);

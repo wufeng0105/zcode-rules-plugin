@@ -44,6 +44,11 @@ export function defaultAgentsPath() {
   return join(homedir(), ".zcode", "AGENTS.md");
 }
 
+/** 用户级 CLI config（R1：检查是否残留手工 PermissionRequest 接线）。 */
+export function defaultCliConfigPath() {
+  return join(homedir(), ".zcode", "cli", "config.json");
+}
+
 /** 本仓库/插件根（模块相对定位，不依赖 cwd）。 */
 export function pluginRoot() {
   return PLUGIN_ROOT;
@@ -324,12 +329,43 @@ function resolvePluginVersionInfo() {
 }
 
 /**
+ * R1：「config 无手工接线」检查。
+ * 真实 home 的 A 路线安装态会在 `hooks.events.PermissionRequest` 留数组；插件装上后
+ * 同一事件双 hook 行为叠加不可判，所以 selfcheck 只做 warning，不阻断。
+ * 返回 `{ level, message, detail }`；文件缺失/无该键 = 通过。
+ */
+function inspectManualPermissionHooks(configPath) {
+  if (!existsSync(configPath)) {
+    return { level: "ok", message: "config 不存在，无手工 PermissionRequest 接线", detail: configPath };
+  }
+  let config;
+  try {
+    config = JSON.parse(readFileSync(configPath, "utf8"));
+  } catch (error) {
+    return {
+      level: "warn",
+      message: `config 不是合法 JSON，未能确认无手工 PermissionRequest 接线：${String(error?.message ?? error)}`,
+      detail: configPath,
+    };
+  }
+  const matchers = config?.hooks?.events?.PermissionRequest;
+  if (Array.isArray(matchers) && matchers.length > 0) {
+    return {
+      level: "warn",
+      message: "config 含手工 PermissionRequest 接线（A 路线残留？）",
+      detail: `${configPath} · ${matchers.length} 组 matcher`,
+    };
+  }
+  return { level: "ok", message: "config 无手工 PermissionRequest 接线", detail: configPath };
+}
+
+/**
  * 自检（只读，不写任何文件）。
  * 检查项：规则合法、内容策略空/非空、两段投影是否与实际渲染一致（手改提示）、
- *        AGENTS.md 尺寸 >90KiB 预警、版本号。
- * 返回 `{ ok, checks, summary }`；ok 只由 error 级检查决定（warn 不阻断）。
+ *        AGENTS.md 尺寸 >90KiB 预警、版本号、config 无手工接线（R1）。
+ * 返回 `{ ok, checks, summary }`；ok 只由 error 级检查决定（warn/info 不阻断）。
  */
-export function runSelfcheck({ agentsPath, dataDir } = {}) {
+export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
   const checks = [];
   const add = (id, level, message, detail) => {
     checks.push({ id, level, message, ...(detail === undefined ? {} : { detail }) });
@@ -367,6 +403,12 @@ export function runSelfcheck({ agentsPath, dataDir } = {}) {
     add("rules-valid", "error", `规则文件不可用：${rulesLoaded.errors.join(" ; ")}`, rulesLoaded.path);
   } else if (!rulesLoaded.exists) {
     add("rules-valid", "warn", "规则文件尚未创建（空规则 = 产品原行为）", rulesLoaded.path);
+    add(
+      "rules-default",
+      "info",
+      "rules.json 缺失：hook 使用插件内置空规则（rules.default.json，unmatched=abstain，零行为变化）",
+      rulesLoaded.path,
+    );
   } else {
     rulesCount = rulesLoaded.rules.rules.length;
     add(
@@ -393,6 +435,13 @@ export function runSelfcheck({ agentsPath, dataDir } = {}) {
     );
   }
   for (const warning of policyLoaded.warnings) add("policy-warning", "warn", warning);
+
+  // 2.5) config 无手工接线（R1：A→B 迁移双 hook 窗口）
+  const cliConfigPath = typeof configPath === "string" && configPath.trim() !== ""
+    ? resolve(configPath)
+    : defaultCliConfigPath();
+  const manualHooks = inspectManualPermissionHooks(cliConfigPath);
+  add("config-no-manual-hooks", manualHooks.level, manualHooks.message, manualHooks.detail);
 
   // 3) AGENTS.md 与两段投影
   const agentsExists = existsSync(target);

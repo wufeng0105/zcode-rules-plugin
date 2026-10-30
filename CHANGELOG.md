@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 0.2.1（2026-10-30）
+
+hook 入口兜底 + selfcheck「config 无手工接线」（M2 · R1）：
+
+- `rules.default.json`（仓根）：内置空规则（`version:1` / `unmatched:"abstain"` / `onTimeout:"deny"` / `watchdogMs:120000` / `rules:[]`），作为数据目录还没有 `rules.json` 时的兜底内容基线，过 `validateRules`。
+- `src/hooks/permission-rules-entry.mjs`：PermissionRequest hook 入口 launcher——同步读全量 stdin；`<data>/rules.json` 存在则用，否则用 `${ZCODE_PLUGIN_ROOT}/rules.default.json`（`--default` 可覆盖，`--data`/`--root` 缺省回退 `ZCODE_PLUGIN_DATA`/`ZCODE_PLUGIN_ROOT`）；两者皆缺 → 输出合法 abstain（无 decision + systemMessage）exit 0；委托参考 hook 时 stdin 原文透传、原样转发 stdout/stderr、继承 0/2 退出码；launcher 自身异常（含委托失败/输出非法 JSON）→ 显式 abstain + stderr + exit 0，不创建/不写任何文件、不持有定时器。
+- `.zcode-plugin/plugin.json` v0.2.1：hooks 命令改为 `permission-rules-entry.mjs --data "${ZCODE_PLUGIN_DATA}" --root "${ZCODE_PLUGIN_ROOT}" --watchdog-ms 120000`。
+- `src/mcp/operations.mjs`：`runSelfcheck` 新增 `config-no-manual-hooks` 检查——`hooks.events.PermissionRequest` 为非空数组时给 warning（「config 含手工 PermissionRequest 接线（A 路线残留？）」），config 缺失/该键缺省/空数组通过，非法 JSON 给 warning（无法确认）；`rules.json` 缺失时新增 `rules-default` info（使用内置空规则）；新增 `configPath` 参数与 `defaultCliConfigPath()`。
+- `src/mcp/server.mjs`：`selfcheck_run` 接受可选 `configPath`（测试/诊断用），默认仍读 `os.homedir()/.zcode/cli/config.json`。
+- `ui/panel.html`：版本号更新为 v0.2.1。
+- 测试：新增 `tests/entry.test.mjs`（11 例，spawn 真进程覆盖缺规则 abstain / allow / deny 转发 / 非法规则短 watchdog exit 2 / stdin 原文透传 / default 回退与优先级 / 委托失败 fail-safe）；`tests/operations.test.mjs` 追加 5 例（config 有/无手工接线、空数组、非法 JSON、内置空规则 info）；`node --test tests/` 共 86 例全绿。
+- 隔离安装冒烟（directory 市场 → validate → install → list --verbose（hooks: 1）→ uninstall --force → 三处清净）通过，真实 home 指纹零差异；证据 `.zhll\rt\wp26\hook-entry-matrix.{mjs,log}`、`.zhll\rt\wp26\smoke-plugin-v0.2.1.log`（ZCode 检出，gitignored）。
+- 四个参照实现（`rules-engine.mjs` / `agents-section.mjs` / `export-agents.mjs` / `permission-rules.mjs`）**未改一行**，sha256 与 ZCode 检出全等。
+
 ## 0.2.0（2026-10-30）
 
 插件壳与数据面（M2）：

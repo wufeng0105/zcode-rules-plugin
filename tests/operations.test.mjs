@@ -232,7 +232,7 @@ test("runSelfcheck：干净状态全绿（规则/策略/投影/版本/尺寸）"
   assert.equal(savePolicy(policyPath, "策略：保持克制。").ok, true);
   assert.equal(exportAgents({ agentsPath, policy: "策略：保持克制。", rules: RULES_A }).ok, true);
 
-  const result = runSelfcheck({ agentsPath, dataDir });
+  const result = runSelfcheck({ agentsPath, configPath: join(dataDir, "config.json"), dataDir });
   assert.equal(result.ok, true);
   const levels = Object.fromEntries(result.checks.map((check) => [check.id, check.level]));
   assert.equal(levels["rules-valid"], "ok");
@@ -262,7 +262,7 @@ test("runSelfcheck：规则段被手改 → 警告定位到 zcode-rules 段", ()
     .replace("禁止递归删除", "已被人手改")}${text.slice(loc.end)}`;
   writeFileSync(agentsPath, tampered, "utf8");
 
-  const result = runSelfcheck({ agentsPath, dataDir });
+  const result = runSelfcheck({ agentsPath, configPath: join(dataDir, "config.json"), dataDir });
   assert.equal(result.ok, true, "手改是 warn，不是 error");
   const ruleCheck = result.checks.find((check) => check.id === "rules-section");
   assert.equal(ruleCheck.level, "warn");
@@ -277,16 +277,104 @@ test("runSelfcheck：AGENTS.md >90KiB 触发尺寸预警，阈值下不触发", 
   assert.equal(saveRules(rulesPath, RULES_A).ok, true);
   assert.equal(exportAgents({ agentsPath, policy: "", rules: RULES_A }).ok, true);
 
-  const small = runSelfcheck({ agentsPath, dataDir });
+  const small = runSelfcheck({ agentsPath, configPath: join(dataDir, "config.json"), dataDir });
   assert.equal(small.checks.find((check) => check.id === "agents-size").level, "ok");
 
   appendFileSync(agentsPath, `\n${"x".repeat(AGENTS_SIZE_WARN_BYTES)}\n`, "utf8");
-  const big = runSelfcheck({ agentsPath, dataDir });
+  const big = runSelfcheck({ agentsPath, configPath: join(dataDir, "config.json"), dataDir });
   assert.equal(big.ok, true, "尺寸预警是 warn，不阻断");
   const sizeCheck = big.checks.find((check) => check.id === "agents-size");
   assert.equal(sizeCheck.level, "warn");
   assert.match(sizeCheck.message, /90 KiB/);
   assert.ok(big.summary.agentsBytes > AGENTS_SIZE_WARN_BYTES);
+});
+
+test("runSelfcheck：rules.json 缺失 → rules-default info（使用内置空规则）", () => {
+  const { dataDir } = dataDirFixture();
+  const result = runSelfcheck({
+    agentsPath: join(dataDir, "AGENTS.md"),
+    configPath: join(dataDir, "config.json"),
+    dataDir,
+  });
+  assert.equal(result.ok, true);
+  const checks = Object.fromEntries(result.checks.map((check) => [check.id, check]));
+  assert.equal(checks["rules-valid"].level, "warn");
+  assert.equal(checks["rules-default"].level, "info");
+  assert.match(checks["rules-default"].message, /内置空规则/);
+  assert.match(checks["rules-default"].message, /abstain/);
+});
+
+test("runSelfcheck：config 不存在 → config-no-manual-hooks 通过", () => {
+  const { dataDir } = dataDirFixture();
+  const configPath = join(dataDir, "cli-config.json");
+  const result = runSelfcheck({ agentsPath: join(dataDir, "AGENTS.md"), configPath, dataDir });
+  const check = result.checks.find((entry) => entry.id === "config-no-manual-hooks");
+  assert.equal(check.level, "ok");
+  assert.match(check.message, /无手工 PermissionRequest 接线/);
+  assert.equal(result.ok, true);
+});
+
+test("runSelfcheck：config 含手工 PermissionRequest 接线 → warning（不阻断）", () => {
+  const { dataDir } = dataDirFixture();
+  const configPath = join(dataDir, "config.json");
+  writeFileSync(
+    configPath,
+    `${JSON.stringify(
+      {
+        hooks: {
+          events: {
+            PermissionRequest: [{ hooks: [{ command: "node legacy-permission-rules.mjs", type: "command" }] }],
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+  const result = runSelfcheck({ agentsPath: join(dataDir, "AGENTS.md"), configPath, dataDir });
+  assert.equal(result.ok, true, "手工接线是 warning，不是 error");
+  const check = result.checks.find((entry) => entry.id === "config-no-manual-hooks");
+  assert.equal(check.level, "warn");
+  assert.match(check.message, /A 路线残留/);
+  assert.equal(result.summary.errors, 0);
+  assert.ok(result.summary.warnings >= 1);
+});
+
+test("runSelfcheck：PermissionRequest 为空数组或 hooks 缺省 → 通过", () => {
+  const { dataDir } = dataDirFixture();
+  const configPath = join(dataDir, "config.json");
+  const target = () => runSelfcheck({ agentsPath: join(dataDir, "AGENTS.md"), configPath, dataDir });
+
+  writeFileSync(
+    configPath,
+    `${JSON.stringify({ hooks: { events: { PermissionRequest: [] } } }, null, 2)}\n`,
+    "utf8",
+  );
+  assert.equal(target().checks.find((entry) => entry.id === "config-no-manual-hooks").level, "ok");
+
+  writeFileSync(
+    configPath,
+    `${JSON.stringify(
+      { hooks: { events: { SessionStart: [{ hooks: [{ command: "node x.mjs", type: "command" }] }] } } },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+  const otherEvent = target().checks.find((entry) => entry.id === "config-no-manual-hooks");
+  assert.equal(otherEvent.level, "ok", "只认 PermissionRequest，不误报其它事件");
+});
+
+test("runSelfcheck：config 非法 JSON → warning（无法确认无接线）", () => {
+  const { dataDir } = dataDirFixture();
+  const configPath = join(dataDir, "config.json");
+  writeFileSync(configPath, "{ 这不是 JSON", "utf8");
+  const result = runSelfcheck({ agentsPath: join(dataDir, "AGENTS.md"), configPath, dataDir });
+  assert.equal(result.ok, true);
+  const check = result.checks.find((entry) => entry.id === "config-no-manual-hooks");
+  assert.equal(check.level, "warn");
+  assert.match(check.message, /未能确认/);
 });
 
 test("renderPanelHtml 与 ui/panel.html 逐字节一致，且无假按钮/脚本", () => {
@@ -301,3 +389,4 @@ test("renderPanelHtml 与 ui/panel.html 逐字节一致，且无假按钮/脚本
   assert.ok(!/<script\b/i.test(html), "静态占位页不应有脚本");
   assert.ok(!/<form\b/i.test(html), "静态占位页不应有表单");
 });
+
