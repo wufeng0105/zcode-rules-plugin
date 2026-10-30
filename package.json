@@ -6,6 +6,8 @@
   "license": "MIT",
   "scripts": {
     "test": "node --test tests/",
+    "verify": "node scripts/verify-fidelity.mjs && node scripts/check-docs.mjs",
+    "smoke:upgrade": "node scripts/smoke-upgrade.mjs",
     "start:mcp": "node src/mcp/server.mjs"
   }
 }

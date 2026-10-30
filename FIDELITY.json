@@ -1,0 +1,6 @@
+{
+  "src/rules/rules-engine.mjs": "8d28407ec7feecfefc93975d0be5446c59ef64cf4921040acc5556ee293980bb",
+  "src/rules/agents-section.mjs": "3088e7d0692b5703dc8ee77107f6c4eb32a5c01569c076992b417ae1ca4d599f",
+  "src/rules/export-agents.mjs": "22f4a0c0a71e8cdbe912b614da0c286a0a3e3f0973dbfdf9ea068a017781b51a",
+  "src/hooks/permission-rules.mjs": "a8c2121e6e6118cb506faa3e3842527df50fb866f74aa4f7c12c62fb7e464b23"
+}

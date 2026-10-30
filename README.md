@@ -182,11 +182,39 @@ v0.3.0 共 146 个用例：v0.2.1 既有 86 + 新增 60（面板静态断言 19�
 
 `src/rules/sections.mjs`、`src/mcp/operations.mjs`、`src/mcp/server.mjs`、`src/hooks/permission-rules-entry.mjs`、`src/mcp/bridge.mjs`、`src/mcp/agents-backfill.mjs`、`ui/panel.html` 是 v0.2.0–v0.3.0 新增实现，不属于参照实现，不受上述保真约束。
 
-保真校验（在仓库根执行）：
+上表的 sha256 **不再靠人肉比对**：基线落在仓库内 `FIDELITY.json`，由脚本对工作树实测值逐条比对（重新生成基线：`node scripts/verify-fidelity.mjs --list`）。基线缺失条目、多出清单外条目、值不是 64 位十六进制，一律 fail-closed —— 否则「删掉一条基线」就能让保真校验静默失效。
+
+## CI 与本地门禁
+
+`.github/workflows/ci.yml` 是唯一的 workflow：`ubuntu-latest` + Node 24，三步全是 `node <脚本>`，**不装依赖、不联网**（本仓库零运行时依赖、零 devDependency，测试与校验脚本只 `import node:` 内置模块）。CI 是回归防线，不是证据源；运行期判据的证据仍落 ZCode 检出的 `docs/zcode-mod/evidence/`。
+
+> 徽章占位：仓库托管到 GitHub 后，把 `<owner>/<repo>` 换成实际值即可启用
+> `![ci](https://github.com/<owner>/<repo>/actions/workflows/ci.yml/badge.svg)`。
+> **托管前不写死徽章**——写一个指向不存在仓库的徽章等于给读者一张 404 图。
+
+三段命令（在仓库根执行，与 CI 逐步对应；全部离线、零依赖）：
 
 ```pwsh
-Get-FileHash -Algorithm SHA256 src\rules\rules-engine.mjs, src\rules\agents-section.mjs, src\rules\export-agents.mjs, src\hooks\permission-rules.mjs
+node scripts/verify-fidelity.mjs      # 4 个参照实现 vs FIDELITY.json（exit 0 全等 / 1 有差异）
+node scripts/check-docs.mjs           # README/CHANGELOG 的相对链接与仓库内路径引用是否存在
+node --test tests/                    # 单元测试（146 例）
 ```
+
+`npm run verify` 串联前两条（等价于 CI 前两步）；`npm run smoke:upgrade` 是下面的 P-8 升级模拟。
+
+### P-8 升级模拟（`scripts/smoke-upgrade.mjs`）
+
+验证「换 version 重装」不会丢用户真源：装 v0.3.0 → 经数据面写 1 条规则 + 非空内容策略 → 换 version 重装 → 断言 `rules.json` / `content-policy.json` 字节与 sha256 不变、`AGENTS.md` 投影 sha256 不变（幂等）、插件 id 与 `enabledPlugins` 不变 → 卸载并确认清理。
+
+**必须在隔离 home 里跑**，经指纹包壳启动（真实 home 零触碰；脚本自带安全门，`HOME` 不在 `.zhll/rt/iso-runs/**` 下即 exit 2 拒绝）：
+
+```pwsh
+# 在 ZCode 检出根执行；<插件仓> = 本仓库绝对路径
+node docs/zcode-mod/isolation/tools/run-with-fingerprint.mjs --label wp33-upgrade `
+  -- node "<插件仓>\scripts\smoke-upgrade.mjs" --proof-log .zhll/rt/wp33/upgrade-proof.log
+```
+
+升级走「源副本改 version」：把本仓复制到隔离目录、把副本清单 `version` 改为 0.3.1、市场条目指向副本后再 `plugins install`。**不能**靠改插件缓存里的 manifest——实测 `install` 每次都从市场条目 `source.path` 重新复制、并用**源**清单的 `version` 决定安装版本，改缓存不生效（脚本把这一步当对照观测写进日志，并还原被改的缓存清单）。
 
 ## 许可
 

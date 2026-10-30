@@ -1,0 +1,42 @@
+# CI 门禁（零依赖、不联网、不装包）
+#
+# 三步都是 `node <脚本>`，只用 Node 内置模块：
+#   1) verify-fidelity —— 4 个参照实现 vs 仓库内 FIDELITY.json 的 sha256
+#   2) check-docs      —— README/CHANGELOG 里的相对链接与仓库内路径引用是否存在
+#   3) node --test     —— 单元测试（tests/index.js 是目录参数入口）
+#
+# 为什么没有任何依赖安装步骤：本仓库零运行时依赖、零 devDependency，
+# 测试与校验脚本只 import node: 内置模块；装了反而引入供应链面与不必要的失败源。
+#
+# 只跑 ubuntu-latest + node 24：与作者本机（node v24.20.0）一致；多 OS 矩阵见
+# ZCode 检出 `docs/zcode-mod/plan/DELIVERY-ROADMAP.md` §5.1「明确不做」。
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify (node 24)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 参照实现保真（4 文件 sha256）
+        run: node scripts/verify-fidelity.mjs
+
+      - name: 文档链接与文件引用
+        run: node scripts/check-docs.mjs
+
+      - name: 单元测试
+        run: node --test tests/

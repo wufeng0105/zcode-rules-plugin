@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 未发布（工程化，版本仍 0.3.0）
+
+M4 首批：P-8 升级模拟 + CI 门禁 + 保真/文档校验脚本。**不升版本、不打 tag**（本批只加工程化护栏，插件行为零变化）。
+
+- `FIDELITY.json`（新，仓根）+ `scripts/verify-fidelity.mjs`（新）：4 个参照实现的 sha256 基线落进仓库，脚本对工作树实测值逐条比对。基线不再依赖 ZCode 检出，CI 可跑。fail-closed 覆盖：基线缺条目 / 多出清单外条目 / 值非法 / 文件缺失或读失败，任一即 exit 1（否则删一条基线就能让校验静默失效）。`--list` 用于重新生成基线。
+- `scripts/check-docs.mjs`（新）：检查 README / CHANGELOG 里的相对链接、图片、引用式链接与反引号内的仓库内路径引用是否存在。纯静态、无网络。刻意不查：外链（CI 不联网）、纯锚点、`mailto:`、围栏代码块内的示意路径、反斜杠形态的 ZCode 检出路径；`docs/zcode-mod/` 前缀属只读检出，跳过但**逐条打印 SKIP 行**（跳过可见，非静默放行）。
+- `scripts/smoke-upgrade.mjs`（新）：P-8 升级模拟（隔离环境）。装 v0.3.0 → 经数据面写 1 条规则 + 非空内容策略 → 换 version 重装 → 断言 `rules.json` / `content-policy.json` 字节与 sha256 不变、`AGENTS.md` 投影 sha256 不变（重投影 `changed=false`）、插件 id 与 `enabledPlugins` 不变 → 卸载确认清理。脚本自带安全门（`HOME` 必须已重定向到 `.zhll/rt/iso-runs/**` 且不等于真实 home，否则 exit 2），并必须经 `run-with-fingerprint.mjs` 包壳启动。
+  - **升级做法（实测结论）**：ZCode 的 `plugins install` 每次都从市场条目 `source.path` 重新复制、并用**源**清单的 `version` 决定安装版本；只改插件缓存里的 manifest 不生效（脚本把这一步当对照观测写进日志，并还原被改的缓存清单）。故升级走「复制本仓到隔离目录 → 改副本清单 version=0.3.1 → 市场条目指向副本 → `plugins install`」，全程不碰本仓与 ZCode 检出。
+  - 卸载语义补充（实测）：`uninstall` 只删**当前** installPath，不清 cache 父目录，换过版本的机器上旧版本目录会残留——脚本把它记为 INFO 而非失败项。
+- `.github/workflows/ci.yml`（新）：`ubuntu-latest` + Node 24，三步 `run`（verify-fidelity / check-docs / `node --test tests/`），**无任何依赖安装步骤**（零依赖，只用 `actions/checkout` + `actions/setup-node`）。
+- `package.json`：新增 `verify`（两个静态校验串联）与 `smoke:upgrade` 两个脚本；版本仍 0.3.0。
+- `README.md`：新增「CI 与本地门禁」段（徽章占位说明 + 三段命令）与「P-8 升级模拟」小节；「来源与保真」段的旧 `Get-FileHash` 手抄命令改指 `verify-fidelity` 脚本。
+- 测试：新增 `tests/static-checks.test.mjs`（17 例，覆盖两个校验脚本的**红/绿双向**——恒真脚本比没脚本更糟）与 `tests/ci-config.test.mjs`（6 例，workflow 语义回归）；`node --test tests/` 共 169 例全绿。
+- 证据（ZCode 检出侧，gitignored）：`.zhll\rt\wp33\upgrade-proof.log`（P-8 全流程五段头）、`docs\zcode-mod\evidence\rt-iso-wp33-upgrade.log`（包壳隔离证明，真实 home 指纹零差异）。
+- 四个参照实现未改一行；`FIDELITY.json` 记录的 sha256 与文件实测全等。
+
 ## 0.3.0（2026-10-30）
 
 面板四屏 + 手改提示用户路径（M3 · T33）：
