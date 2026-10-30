@@ -1,0 +1,59 @@
+{
+  "name": "zcode-rules",
+  "version": "0.2.0",
+  "license": "MIT",
+  "description": "ZCode 规则插件：一份规则源、两个出口（权限 hook 判定 + AGENTS.md 双哨兵投影）。One rules source, two exits: a PermissionRequest hook and dual-sentinel AGENTS.md projection.",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${ZCODE_PLUGIN_ROOT}/src/hooks/permission-rules.mjs\" --rules \"${ZCODE_PLUGIN_DATA}/rules.json\" --watchdog-ms 120000"
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "zcode-rules": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${ZCODE_PLUGIN_ROOT}/src/mcp/server.mjs"
+      ],
+      "env": {
+        "ZCODE_RULES_DATA": "${ZCODE_PLUGIN_DATA}",
+        "ZCODE_RULES_ROOT": "${ZCODE_PLUGIN_ROOT}"
+      }
+    }
+  },
+  "ui": {
+    "surfaces": [
+      {
+        "id": "zcode-rules",
+        "title": {
+          "zh-CN": "ZCode 规则",
+          "en-US": "ZCode Rules"
+        },
+        "server": "zcode-rules",
+        "resourceUri": "ui://zcode-rules/panel.html",
+        "availability": "session"
+      }
+    ]
+  },
+  "userConfig": {
+    "enabled": {
+      "type": "boolean",
+      "title": "启用规则",
+      "description": "关闭后不注入规则（等价空规则，产品原行为）。",
+      "default": true
+    },
+    "watchdogSeconds": {
+      "type": "number",
+      "title": "看门狗秒数",
+      "description": "规则不可用时的最长等待秒数，到点按 onTimeout=deny 处理（当前 hook 命令固定 120000ms，本项供面板与后续版本读取）。",
+      "default": 120
+    }
+  }
+}

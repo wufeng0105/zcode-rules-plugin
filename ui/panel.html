@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ZCode 规则 · 面板</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0f1115;
+        --card: #171a21;
+        --border: #2a2f3a;
+        --fg: #e6e8ee;
+        --muted: #9aa3b2;
+        --accent: #7aa2f7;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+        background: var(--bg);
+        color: var(--fg);
+        font: 14px/1.65 "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        display: grid;
+        gap: 16px;
+      }
+      header {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 16px;
+      }
+      .eyebrow {
+        margin: 0;
+        color: var(--accent);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 4px 0 6px;
+        font-size: 26px;
+        line-height: 1.2;
+      }
+      h2 {
+        margin: 0 0 8px;
+        font-size: 16px;
+      }
+      .meta {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+      }
+      ul {
+        margin: 8px 0 0;
+        padding-left: 20px;
+      }
+      li + li {
+        margin-top: 4px;
+      }
+      code {
+        background: rgba(122, 162, 247, 0.12);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 12.5px;
+      }
+      .note {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">ZCode Rules</p>
+        <h1>ZCode 规则</h1>
+        <p class="meta">插件版本 <strong>v0.2.0</strong> · 面板形态：静态占位（session 级）</p>
+      </header>
+
+      <section aria-labelledby="status-heading">
+        <h2 id="status-heading">当前状态</h2>
+        <p>
+          本页为静态占位页，不含任何交互控件。当前规则与内容策略状态由 MCP 工具返回，面板不缓存、不猜测：
+        </p>
+        <ul>
+          <li><code>rules_read</code> / <code>rules_write</code> — 结构化规则（<code>rules.json</code>）</li>
+          <li>
+            <code>content_policy_read</code> / <code>content_policy_write</code> — 自由文本内容策略（<code>content-policy.json</code>）
+          </li>
+          <li><code>export_agents</code> — 把两段投影到 <code>AGENTS.md</code>（双哨兵）</li>
+          <li><code>selfcheck_run</code> — 规则 / 策略 / 投影 / 尺寸 / 版本自检</li>
+        </ul>
+        <p class="note">
+          空规则 + 空策略 = 零行为变化：不写规则时，本插件不改变 ZCode 的任何默认判定。
+        </p>
+      </section>
+
+      <section aria-labelledby="data-heading">
+        <h2 id="data-heading">数据目录</h2>
+        <p>
+          数据目录由宿主在启动 MCP server 时通过 <code>ZCODE_RULES_DATA</code>（等价
+          <code>ZCODE_PLUGIN_DATA</code>）注入；本页不读写磁盘，也不猜测路径。
+        </p>
+        <p class="note">
+          <code>AGENTS.md</code> 默认指向用户级 <code>~/.zcode/AGENTS.md</code>；导出与自检都支持显式路径覆盖。
+        </p>
+      </section>
+
+      <section aria-labelledby="roadmap-heading">
+        <h2 id="roadmap-heading">路线图</h2>
+        <p>面板四屏在 M3 实现：规则、策略、投影预览、自检。v0.2.0 只提供本占位页与 MCP 数据面。</p>
+      </section>
+    </main>
+  </body>
+</html>
