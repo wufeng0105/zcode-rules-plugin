@@ -143,3 +143,14 @@ node scripts/proof/p8-real-upgrade.mjs
 ```
 
 ⚠️ 这些脚本会**写真实 home**（写规则、升级插件、跑会话）。请先按上文「隔离环境」把它们包起来跑，或接受在真实 home 上操作。
+
+### 附：stdio MCP server 的可靠探针
+
+`../scripts/tools-list-probe.mjs` 用**串行** JSON-RPC（await initialize → notifications/initialized → tools/list）读一个 stdio MCP server 的工具清单：
+
+```pwsh
+node ../scripts/tools-list-probe.mjs <server.mjs 路径> <dataDir>
+# 期望：tools=6 rules_read,rules_write,content_policy_read,content_policy_write,export_agents,selfcheck_run
+```
+
+⚠️ 四个实测坑（脚本头部有完整注释）：请求必须**串行**发；必须显式 `stdio:["pipe","pipe","pipe"]`；不要用 `cmd /c` 重定向（`<`/`>` 会被当普通参数）；不要用 `shell:true` 跑整串（`set` 的值会带上引号）。
