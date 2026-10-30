@@ -105,6 +105,7 @@ summary errors=0 warnings=0 rulesCount=0 version=0.4.1
 | 文档 | 内容 |
 | --- | --- |
 | [QUICKSTART.md](QUICKSTART.md) | 一页纸：装、写第一条规则、面板在哪、卸载干净、常见坑 |
+| [docs/DOD.md](docs/DOD.md) | **验收判据逐条核销**（D-1..D-10，每条带可复跑证据） |
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | 验证结论与证据（含未覆盖范围） |
 | [docs/REPRODUCE.md](docs/REPRODUCE.md) | 第三方如何复跑每条判据（含两个实测坑） |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | 开发者参考：目录结构、数据结构、MCP 数据面、桥接、保真、CI |

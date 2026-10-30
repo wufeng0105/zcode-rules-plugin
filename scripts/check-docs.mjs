@@ -32,7 +32,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, "..");
 
 // 默认受检文档：对外可见、且引用仓库内文件的那几份。
-const DEFAULT_DOCS = Object.freeze(["README.md", "QUICKSTART.md", "CHANGELOG.md", "docs/VERIFICATION.md", "docs/REPRODUCE.md", "docs/DEVELOPMENT.md"]);
+const DEFAULT_DOCS = Object.freeze(["README.md", "QUICKSTART.md", "CHANGELOG.md", "docs/VERIFICATION.md", "docs/REPRODUCE.md", "docs/DEVELOPMENT.md", "docs/DOD.md"]);
 
 // 反引号引用里允许的"仓库内路径"形态：必须像路径（至少一段 + 斜杠 + 已知扩展名/文件名），
 // 且**不以**这些开头（那些是命令、变量、URL、占位符，不是文件引用）。
