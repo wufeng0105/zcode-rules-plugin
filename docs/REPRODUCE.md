@@ -87,3 +87,23 @@ node docs/isolation/tools/run-with-fingerprint.mjs --label my-label -- node <你
 `VERIFICATION.md` 每条结论都标注了验证方式与是否在真实环境跑过。其中「hook 决策生效」的结论附**对照组**（禁用插件后同配置不生效），是因果证明而非相关性。
 
 已明确声明**未覆盖**的范围也在该文件末尾（如 `guarded` 档位、`-p` 无人值守面）。
+
+## 六、随仓附带的判据驱动脚本（`scripts/proof/`）
+
+三份脚本把上述判据做成了**可重跑**的形式，路径全部可由环境变量覆盖（仓库根由脚本位置自推导）：
+
+| 脚本 | 覆盖判据 | 需要的环境变量 |
+| --- | --- | --- |
+| `scripts/proof/dod-remaining.mjs` | D-1 / D-2 / D-4 / D-7b / D-8 | `ZCODE_CLI_ENTRY`、`ZCODE_INSTALL_DIR`（可省略，取 Windows 默认安装位置） |
+| `scripts/proof/d3-real-session.mjs` | D-3 | `ZCODE_CLI_ENTRY`、`ZCODE_WORKSPACE`（会话工作区） |
+| `scripts/proof/p8-real-upgrade.mjs` | D-7a（P-8 真实升级） | `ZCODE_CLI_ENTRY`、`ZCODE_INSTALL_DIR` |
+
+跑法（示例）：
+
+```pwsh
+node scripts/proof/dod-remaining.mjs
+node scripts/proof/d3-real-session.mjs
+node scripts/proof/p8-real-upgrade.mjs
+```
+
+⚠️ 这些脚本会**写真实 home**（写规则、升级插件、跑会话）。请先按上文「隔离环境」把它们包起来跑，或接受在真实 home 上操作。
