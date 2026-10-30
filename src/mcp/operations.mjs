@@ -398,6 +398,22 @@ export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
     ? resolve(agentsPath)
     : defaultAgentsPath();
 
+  // 0) 数据目录可见性（v0.4.1 新增）
+  // 为什么要它：插件可能以不同 id / 不同市场源安装（目录市场 vs GitHub 源），
+  // 数据目录名随之不同。用户判断「我的规则到底存在哪」只能靠猜。
+  // 这里把宿主注入的数据目录与其中的真源文件显式报出来，让「规则不生效」
+  // 的第一排查动作（确认目录）不必靠猜路径。
+  {
+    const rulesExists = existsSync(paths.rulesPath);
+    const policyExists = existsSync(paths.policyPath);
+    add(
+      "data-dir",
+      "ok",
+      `数据目录：${paths.dataDir}（规则源${rulesExists ? "已存在" : "尚未创建"}，内容策略${policyExists ? "已存在" : "尚未创建"}）`,
+      paths.dataDir,
+    );
+  }
+
   // 1) 规则
   const rulesLoaded = loadRules(paths.rulesPath);
   let rulesCount = 0;

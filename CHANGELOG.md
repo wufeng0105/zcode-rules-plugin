@@ -1,3 +1,12 @@
+## 0.4.1（2026-10-31）
+
+**新增自检项 `data-dir`**（数据目录可见性）——P-8 真实升级的载体版本。
+
+- **为什么加它**：插件可能以不同 id / 不同市场源安装（目录市场 vs GitHub 源），数据目录名随之不同。此前「规则不生效」的第一排查动作（确认自己的规则存在哪）没有出口 —— 自检只在数据目录**出错**时才提它，正常路径下用户看不到。现在正常路径也报。
+- **行为**：自检新增 `data-dir` 项（level=`ok`），message 形如「数据目录：`<绝对路径>`（规则源已存在|尚未创建，内容策略已存在|尚未创建）」，detail 为数据目录绝对路径。**不因缺文件报 error** —— 缺 `rules.json` 仍只让 `rules-valid` 为 `warn`（空规则 = 产品原行为）。
+- **既有项不变**：`rules-valid` / `policy-state` / `config-no-manual-hooks` / `agents-exists` / `agents-size` / `rules-section` / `policy-section` / `version` 八项语义完全不变；`data-dir` 是**新增第九项**，不替换任何既有项。
+- 版本号 `0.4.1`：`package.json`、`.zcode-plugin/plugin.json`、面板字样（`panel-version` / `version-panel` / `appInfo.version` / `PANEL_VERSION`）四处同步。
+- 测试：新增 `tests/data-dir-visibility.test.mjs`（4 例：路径报出 / 已存在与未创建之别 / 不引入 error / 与既有项并存），`node --test tests/` 共 **173 例全绿**（原 169 + 4）。
 ## 0.4.0（2026-10-30）
 
 **交付级文档重写**（M5 · T41）：把仓库从「内部导航」改写为外部用户文档，并把本轮实测出的产品契约边界写进用户可见位置。
@@ -98,4 +107,5 @@ hook 入口兜底 + selfcheck「config 无手工接线」（M2 · R1）：
 - 工程骨架：`package.json`（零运行时依赖）、`README.md`、`LICENSE`（MIT）、`.gitignore`。
 - 测试入口 `tests/index.js`：`node --test tests/`（Node 21–24.20 存在目录参数回归 nodejs/node#64555）的兼容入口，仅导入全部 `*.test.mjs`，不改变测试内容。
 - 不含：插件壳（`.zcode-plugin/plugin.json`）、面板 UI、MCP 数据通道、内容策略段。机制验证与运行期判据仍留在 ZCode 检出 `docs/zcode-mod/`，按路线图 M2 起迁入本仓库。
+
 
