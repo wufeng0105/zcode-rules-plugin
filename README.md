@@ -256,7 +256,7 @@ hook 入口的规则选择：`<data>/rules.json` 存在 → 用它；否则 `${Z
 
 ### 面板与桥接
 
-`ui/panel.html` 是四屏可用面板，经 `src/mcp/bridge.mjs` 同一套 JSON-RPC over postMessage 调自家 6 个工具；不含假按钮、假开关、无确认的清空，也不写「立即生效」。
+`ui/panel.html` 是四屏可用面板，经 `src/mcp/bridge.mjs` 同一套 JSON-RPC over postMessage 调自家 6 个工具；不含假按钮、假开关、无确认的清空，界面也不承诺规则会即时生效。
 
 ### 测试
 
