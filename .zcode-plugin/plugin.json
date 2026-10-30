@@ -46,7 +46,7 @@
     "enabled": {
       "type": "boolean",
       "title": "启用规则",
-      "description": "关闭后不注入规则（等价空规则，产品原行为）。",
+      "description": "关闭后不注入规则（等价空规则，产品原行为）。规则内容与内容策略在**侧边面板**里编辑：会话内按 Ctrl+Alt+B → 插件市场 → ZCode Rules 卡片右上「打开」。",
       "default": true
     },
     "watchdogSeconds": {
