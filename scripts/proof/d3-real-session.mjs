@@ -20,7 +20,7 @@ const HOME = process.env.USERPROFILE;
 const PLUGIN_ID = "zcode-rules@zcode-rules-github";
 const DATA = path.join(HOME, ".zcode", "cli", "plugins", "data", PLUGIN_ID);
 const AGENTS = path.join(HOME, ".zcode", "AGENTS.md");
-const RT = path.join(REPO, ".zhll", "rt", "wp42");
+const RT = process.env.ZCODE_PROOF_OUT ?? path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", ".proof-runs", "d3-real-session");
 const CANARY = path.join(RT, "d3-canary");
 const LOG_DIR = path.join(RT, "logs");
 mkdirSync(RT, { recursive: true });

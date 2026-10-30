@@ -18,7 +18,7 @@ const PLUGIN_ID = "zcode-rules@zcode-rules-github";
 const DATA = path.join(HOME, ".zcode", "cli", "plugins", "data", PLUGIN_ID);
 const AGENTS = path.join(HOME, ".zcode", "AGENTS.md");
 const CONFIG = path.join(HOME, ".zcode", "cli", "config.json");
-const RT = "C:\\Users\\Administrator\\Downloads\\ZCode\\.zhll\\rt\\wp42";
+const RT = process.env.ZCODE_PROOF_OUT ?? path.join(PLUGIN_ROOT, ".proof-runs", "dod-remaining");
 const LOG_DIR = path.join(RT, "logs2");
 
 const lines = [];
@@ -161,7 +161,9 @@ say("\n== D-2 复核：空规则 = 零行为 ==");
 const emptyRules = JSON.parse(readFileSync(path.join(REPO, "rules.default.json"), "utf8"));
 writeFileSync(path.join(DATA, "rules.json"), `${JSON.stringify(emptyRules, null, 2)}\n`, "utf8");
 writeFileSync(path.join(DATA, "content-policy.json"), `${JSON.stringify({ version: 1, text: "" }, null, 2)}\n`, "utf8");
+// 恢复两段（policy 段由 MCP exportAgents 管，CLI 脚本只管 rules 段 —— 必须用 MCP 那一支）
 run([path.join(REPO, "src", "rules", "export-agents.mjs"), "--rules", path.join(DATA, "rules.json"), "--agents-md", AGENTS, "--state", path.join(RT, "install-state.json")], { cwd: REPO });
+exportAgents({ agentsPath: AGENTS, rules: JSON.parse(readFileSync(path.join(DATA, "rules.json"), "utf8")), policy: "" });
 const hookOut = run(
   [path.join(installRoot, "src", "hooks", "permission-rules-entry.mjs"), "--data", DATA, "--root", installRoot, "--watchdog-ms", "120000"],
   { input: JSON.stringify({ hook_event_name: "PermissionRequest", tool_name: "Bash", tool_input: { command: "echo anything" } }) },

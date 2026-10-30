@@ -24,7 +24,9 @@ const PLUGIN_ID = "zcode-rules@zcode-rules-github";
 const DATA = path.join(HOME, ".zcode", "cli", "plugins", "data", PLUGIN_ID);
 const AGENTS = path.join(HOME, ".zcode", "AGENTS.md");
 const CONFIG = path.join(HOME, ".zcode", "cli", "config.json");
-const RT = "C:\\Users\\Administrator\\Downloads\\ZCode\\.zhll\\rt\\wp42";
+const { exportAgents } = await import(`file:///${path.join(PLUGIN_ROOT, "src", "mcp", "operations.mjs").replaceAll("\\", "/")}`);
+// 证据与临时产物的落盘目录：默认在仓库根的 .proof-runs 下（可由 ZCODE_PROOF_OUT 覆盖）
+const RT = process.env.ZCODE_PROOF_OUT ?? path.join(PLUGIN_ROOT, ".proof-runs", "p8-real-upgrade");
 
 const lines = [];
 const say = (s) => {
@@ -91,6 +93,8 @@ say(`  写入真源：rules sha=${rulesSha0.slice(0, 12)} · policy sha=${policy
 // 投影到 AGENTS.md（升级前的基线投影）
 const repoRoot = process.env.ZCODE_PLUGIN_REPO ?? PLUGIN_ROOT;
 const exp = run([path.join(repoRoot, "src", "rules", "export-agents.mjs"), "--rules", path.join(DATA, "rules.json"), "--agents-md", AGENTS, "--state", path.join(RT, "install-state.json")], { cwd: repoRoot });
+// policy 段由 MCP exportAgents 管：CLI 脚本只管 rules 段，必须补这一支才能清掉策略正文
+exportAgents({ agentsPath: AGENTS, rules: JSON.parse(readFileSync(path.join(DATA, "rules.json"), "utf8")), policy: "" });
 ok(exp.status === 0, "升级前投影成功", `exit=${exp.status}`);
 const agentsSha0 = sha(AGENTS);
 const agentsBytes0 = bytes(AGENTS);
@@ -141,6 +145,7 @@ ok(policySha1 === policySha0, "C-B3c content-policy.json 字节不变（真源�
 // ===== 步骤 3：投影幂等 =====
 say("\n== 步骤 3：升级后重投影应幂等 ==");
 const exp2 = run([path.join(repoRoot, "src", "rules", "export-agents.mjs"), "--rules", path.join(DATA, "rules.json"), "--agents-md", AGENTS, "--state", path.join(RT, "install-state.json")], { cwd: repoRoot });
+exportAgents({ agentsPath: AGENTS, rules: JSON.parse(readFileSync(path.join(DATA, "rules.json"), "utf8")), policy: "" });
 say(`  export exit=${exp2.status} · 输出：${(exp2.stdout ?? "").trim().split("\n").filter(Boolean).slice(-1)[0]}`);
 const agentsSha1 = sha(AGENTS);
 ok(agentsSha1 === agentsSha0, "C-B4 AGENTS.md 投影 sha 不变（幂等）", `${agentsSha0.slice(0, 10)} → ${agentsSha1.slice(0, 10)}`);
@@ -178,6 +183,7 @@ const emptyRules = JSON.parse(readFileSync(path.join(repoRoot, "rules.default.js
 writeFileSync(path.join(DATA, "rules.json"), `${JSON.stringify(emptyRules, null, 2)}\n`, "utf8");
 writeFileSync(path.join(DATA, "content-policy.json"), `${JSON.stringify({ version: 1, text: "" }, null, 2)}\n`, "utf8");
 run([path.join(repoRoot, "src", "rules", "export-agents.mjs"), "--rules", path.join(DATA, "rules.json"), "--agents-md", AGENTS, "--state", path.join(RT, "install-state.json")], { cwd: repoRoot });
+exportAgents({ agentsPath: AGENTS, rules: JSON.parse(readFileSync(path.join(DATA, "rules.json"), "utf8")), policy: "" });
 say(`  恢复后 rules 条数=${JSON.parse(readFileSync(path.join(DATA, "rules.json"), "utf8")).rules.length}`);
 for (const r of [installedRoot0, installedRoot1]) {
   rmSync(path.join(r, "scripts", "probe-selfcheck.mjs"), { force: true });
