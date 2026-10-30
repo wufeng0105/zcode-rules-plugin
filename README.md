@@ -53,7 +53,7 @@ node <CLI> plugins list --verbose
 
 ### 规则写了却像没生效？三个最常见原因
 
-1. **命令本来就不会被询问** —— ZCode 自带只读命令白名单（`echo`、`ls`、`git status` 等）走免询问路径，hook 没有参与机会。测规则请用确实会被询问的命令（`touch`、`rm`、`git -C <dir> status`）。
+1. **命令本来就不会被询问** —— ZCode 自带只读命令白名单（`cat` `ls` `head` `wc` `which` `echo` `git status` 等 46 个），走免询问路径，hook 没有参与机会。测规则请用确实会被询问的命令（`touch`、`rm`、`npm --version`、`git -C <dir> status`）。完整对照见 [docs/REPRODUCE.md](docs/REPRODUCE.md) §三。
 2. **正则转义写错** —— `commandPattern` 是**正则**。JSON 里写 `"\\."` 落盘是 `\.`（匹配字面点号，正确）；写 `"\\\\."` 落盘是 `\\.`（匹配字面反斜杠）⇒ 永不命中。在面板里直接写 `\.` 即可，不必操心 JSON 转义。
 3. **锚点与实际命令不匹配** —— 实际命令形态可能是 `touch "C:/path/x.probe-file"`（带引号）。`^touch$` 匹配不上；用 `touch .*probe-file` 这类宽松写法。
 

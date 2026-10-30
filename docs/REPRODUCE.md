@@ -64,19 +64,34 @@ node docs/isolation/tools/run-with-fingerprint.mjs --label my-label -- node <你
 
 ### 坑 1：规则只对「会被询问的命令」起作用
 
-ZCode 自带**只读命令白名单**（`echo`、`ls`、`git status` 等）—— 这些命令走**免询问**路径，产品直接放行，压根不进入权限询问环节，hook 也就没有参与机会。
+ZCode 自带**只读命令白名单** —— 这些命令走**免询问**路径，产品直接放行，压根不进入权限询问环节，hook 也就没有参与机会。
 
 ⇒ 想验证你的 allow 规则，用**确实会被询问**的命令，例如 `touch <file>`、`git -C <dir> status`、`rm <file>`。
-⇒ 实测对照（同一会话、同一份规则）：
+
+**实测对照矩阵**（13 种命令形态，各跑一次真会话，同一份规则）：
 
 | 命令形态 | hook 是否介入 |
 | --- | --- |
 | `touch <file>` | ✅ 介入（`reason=Allowed by PermissionRequest hook`） |
+| `rm -f <file>` | ✅ 介入 |
 | `git -C <绝对路径> status` | ✅ 介入 |
 | `echo x > <file>`（带重定向） | ✅ 介入 |
-| `echo x` / `ls` / `git status`（无 `-C`） | ❌ 不介入（产品判定为只读免询问） |
+| `npm --version` | ✅ 介入 |
+| `echo x` | ❌ 不介入（只读白名单，免询问） |
+| `ls .` | ❌ 不介入 |
+| `cat <file>` | ❌ 不介入 |
+| `git status`（无 `-C`） | ❌ 不介入 |
+| `wc -l <file>` | ❌ 不介入 |
+| `which <cmd>` | ❌ 不介入 |
+| `head -1 <file>` | ❌ 不介入 |
+
+**产品只读白名单（源码实测，46 个命令）**：
+`basename cal cat cmp column comm cut df diff dirname du expand expr false fmt fold free groups head hexdump id locale nl nproc numfmt od paste pr readlink realpath rev seq sleep stat strings tac tail tr true tsort type uname unexpand uptime wc which`
+另有 `docker images` / `docker ps` 两个前缀形态，以及 git / gh 的多词只读子命令集。
 
 > 早期版本的本文件曾写「带重定向的命令 hook 不触发」—— **该结论是错的**，已由上表实测推翻。真实机制是「只读白名单免询问」，与重定向无关。
+>
+> 注意 `docker ps`：实测它**进了询问路径**（有 permission.resolved 记录），但 hook 规则未匹配 —— 说明宿主传给 hook 的命令文本与你在终端里写的字面可能不同（归一化/加参）。规则要覆盖这类命令时，用宽松正则（如 `docker.*`）而不是精确匹配。
 
 ### 坑 1b：`commandPattern` 的正则转义与锚点
 
