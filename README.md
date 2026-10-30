@@ -24,9 +24,10 @@
 node <CLI> plugins validate <repo>
 
 # ② 建一个市场源（一次即可），写 ~/zcode-market/marketplace.json：
+#    注意 path 用**正斜杠**（Windows 下反斜杠在 JSON 里必须转义，容易写错）：
 #    { "name": "my-market",
 #      "plugins": [{ "name": "zcode-rules",
-#                    "source": { "source": "directory", "path": "<repo>" },
+#                    "source": { "source": "directory", "path": "C:/path/to/zcode-rules-plugin" },
 #                    "version": "0.4.1" }] }
 
 # ③ 加入市场源并安装 → 期望：Installed plugin zcode-rules@my-market (0.4.1) [enabled]

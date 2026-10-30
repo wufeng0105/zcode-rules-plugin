@@ -25,7 +25,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO = path.resolve(HERE, "..", "..", "..", "..");
+// 工作根：默认取脚本所在仓库的根（`docs/isolation/tools/` → 上跳 3 级）。
+// 可用 ZCODE_WORKSPACE_ROOT 覆盖 —— 本工具随仓分发时，脚本位置与工作根不再固定层级。
+const WORKSPACE_ROOT = process.env.ZCODE_WORKSPACE_ROOT
+  ? path.resolve(process.env.ZCODE_WORKSPACE_ROOT)
+  : path.resolve(HERE, "..", "..", "..");
+const REPO = WORKSPACE_ROOT;
 const FINGERPRINT = path.join(HERE, "fingerprint.mjs");
 
 function parseArgs(argv) {
