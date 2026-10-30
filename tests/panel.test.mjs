@@ -38,11 +38,12 @@ function implementedActions(html) {
   ].sort();
 }
 
-test("面板版本字样与清单/package.json 一致（0.3.0）", () => {
-  assert.equal(PKG.version, "0.3.0");
-  assert.equal(MANIFEST.version, "0.3.0");
-  assert.match(PANEL, /<strong id="panel-version">v0\.3\.0<\/strong>/);
-  assert.match(PANEL, /const PANEL_VERSION = "0\.3\.0";/);
+test("面板版本字样与清单/package.json 一致（版本从清单读取，不硬编码）", () => {
+  // 版本号不写死：以后升版本不必改这里，但清单/面板/包三处必须始终同源。
+  assert.equal(PKG.version, MANIFEST.version, "package.json 与 manifest 版本不一致");
+  const v = PKG.version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  assert.match(PANEL, new RegExp(`<strong id="panel-version">v${v}</strong>`), "面板版本字样与清单不一致");
+  assert.match(PANEL, new RegExp(`const PANEL_VERSION = "${v}";`), "面板 PANEL_VERSION 常量与清单不一致");
 });
 
 test("四屏标题齐全：状态 / 规则表 / 内容策略 / 自检", () => {

@@ -19,7 +19,7 @@
 // 文档，读者点进去 404 —— 这类腐烂靠人眼复查抓不住，只能靠脚本。
 //
 // 用法：
-//   node scripts/check-docs.mjs                # 默认检查 README.md / CHANGELOG.md / LICENSE 等
+//   node scripts/check-docs.mjs                # 默认检查 README.md / QUICKSTART.md / CHANGELOG.md
 //   node scripts/check-docs.mjs --root <dir>   # 换根（单测用）
 //   node scripts/check-docs.mjs README.md ...  # 只查指定文件（路径相对 --root）
 //
@@ -32,7 +32,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, "..");
 
 // 默认受检文档：对外可见、且引用仓库内文件的那几份。
-const DEFAULT_DOCS = Object.freeze(["README.md", "CHANGELOG.md"]);
+const DEFAULT_DOCS = Object.freeze(["README.md", "QUICKSTART.md", "CHANGELOG.md"]);
 
 // 反引号引用里允许的"仓库内路径"形态：必须像路径（至少一段 + 斜杠 + 已知扩展名/文件名），
 // 且**不以**这些开头（那些是命令、变量、URL、占位符，不是文件引用）。

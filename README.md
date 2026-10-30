@@ -1,92 +1,244 @@
-> **空规则 + 空策略 = 零行为变化**：不写任何规则、不写任何内容策略时，本插件不改变 ZCode 的默认行为——未命中一律 abstain（退赛），权限判定仍由产品原逻辑完成，AGENTS.md 里只有两个空段。
+> **空规则 + 空策略 = 零行为变化**：不写任何规则、不写任何内容策略时，本插件不改变 ZCode 的默认行为——未命中一律 abstain（退赛），权限判定仍由产品原逻辑完成，`AGENTS.md` 里只有两个空段。
 >
 > **缺规则时使用内置空规则（abstain）**：数据目录还没有 `rules.json` 时，hook 入口使用插件内置的 `rules.default.json`（unmatched=abstain），不会 deny，也不创建/写任何文件；非法规则仍按 `onTimeout=deny` fail-closed。
 
 # zcode-rules-plugin
 
-一句话定位：把「一份规则源、两个出口」做成 ZCode 插件——同一个规则 JSON 既供 `PermissionRequest` hook 判 allow/deny/退赛，又投影成 `AGENTS.md` 里给人读的规则段；内容策略以自由文本形式走同一套双哨兵投影。
+**一句话**：把「一份规则源、两个出口」做成 ZCode 插件——同一个规则 JSON 既供 `PermissionRequest` hook 判 allow/deny/退赛，又投影成 `AGENTS.md` 里给人读的规则段；内容策略以自由文本形式走同一套双哨兵投影。
 
-## 快速开始：规则表与内容策略在哪里？
+**你会得到什么**
 
-**插件详情页只有两个配置项**（`启用规则` 开关、`看门狗秒数`）——那是产品设置页按 manifest `userConfig` 渲染的原生控件，**不是功能界面**。
+| 能力 | 说明 |
+| --- | --- |
+| 命令级权限规则 | 在面板里写规则（工具 + 匹配 + 判定），命中即 allow/deny；不命中一律 abstain（交回 ZCode 原逻辑） |
+| 给模型看的人可读规则 | 同一份规则自动投影到 `~/.zcode/AGENTS.md` 的 `zcode-rules` 段 |
+| 内容策略 | 一段自由文本，投影到 `AGENTS.md` 的 `zcode-content-policy` 段（如「提交信息一律中文」「回答先给结论」） |
+| 双向可见 | 所有数据都在你自己的磁盘上：规则在插件数据目录，投影在 `AGENTS.md`，两者都能手工查看和编辑 |
+| 可自查 | 面板「运行检查」给出八项自检：规则合法、策略状态、投影一致、尺寸、版本一致等 |
 
-规则表、内容策略输入框、自检结果都在**侧边面板**里：
+**它不做什么**（先说清，免得误会）
+
+- 不修改 ZCode 本身，不改你的模型配置，不联网。
+- 不接管没写规则的命令——未命中一律 abstain。
+- 不在用户不确认的情况下改写 `AGENTS.md` 段外的内容（只维护两个带哨兵的段）。
+- 不提供「一键清空所有规则」的按钮（删规则请在 JSON 里把 `rules` 改成 `[]` 再保存，你能看见内容再确认）。
+
+---
+
+## 五分钟上手
+
+### 1. 准备市场（一次即可）
+
+插件以**目录市场**方式安装。先在仓库里建一个市场目录（例如 `~/zcode-market/`），里面放一个 `marketplace.json`：
+
+```json
+{
+  "name": "my-market",
+  "plugins": [
+    {
+      "name": "zcode-rules",
+      "source": { "source": "directory", "path": "<本仓库绝对路径>" },
+      "version": "0.4.0",
+      "description": "一份规则源，两个出口"
+    }
+  ]
+}
+```
+
+### 2. 校验并加入市场
+
+```pwsh
+# <CLI> = C:\Program Files\ZCode\resources\glm\zcode.cjs
+node <CLI> plugins validate <本仓库路径>
+# 期望：Plugin manifest is valid
+
+node <CLI> plugins marketplace add ~/zcode-market
+# 期望：Added marketplace my-market (1 plugins)
+```
+
+### 3. 安装
+
+```pwsh
+node <CLI> plugins install zcode-rules@my-market
+node <CLI> plugins list --verbose
+# 期望含：zcode-rules@my-market … hooks: 1 … mcp: plugin:zcode-rules:zcode-rules
+```
+
+### 4. 打开面板
+
+面板在**侧边面板**里（不在插件详情页）：
 
 1. 打开任意会话（侧边面板是会话级，空会话不显示插件入口）。
-2. 按 **`Ctrl` + `Alt` + `B`** 打开右侧面板（或点窗口右上角的侧栏图标）。
-3. 在「插件市场」里找到 **ZCode Rules** 卡片，点卡片右上角的 **「打开」** 按钮（`data-testid="plugin-store-open-ui"`）。
-4. 面板四屏：
-   - **状态**：规则 N 条 / 策略空或非空 / 自检 ok·warn·error（总开关由产品设置页控制，面板只显示说明，不提供假开关）
-   - **规则表**：表格 + JSON 编辑框（保存后自动重投影 `AGENTS.md` 并跑自检）
-   - **内容策略**：多行文本框（默认空；保存后进 `zcode-content-policy` 段；**对新会话生效**，用户级 = 所有工作区）
-   - **自检与版本**：逐项结果 + 版本对 + 备份说明；`AGENTS.md` 段被手改时给出提示与「覆盖 / 回填」两个动作
+2. 按 <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>B</kbd> 打开右侧面板。
+3. 在「插件市场」里找到 **ZCode Rules** 卡片，点卡片右上角的 **「打开」**。
 
-> **三个走不通的入口**（实测过，写在这里免得你再试）：
+> **三个走不通的入口**（实测过，别再试）：
 > 1. 详情页的「立即试用」——只把示例提示词预填进新会话，**不开面板**；
 > 2. 侧栏「应用插件」推荐区——只列官方推荐插件，自建市场插件不出现；
-> 3. 插件详情页的「配置」区——只有 `userConfig` 那两项，没有任何规则/文本输入框。
->
-> **升级插件后**：已打开的面板标签需**关掉重开**（或重启 ZCode）。面板资源路径含版本号，旧标签会报 `ENOENT`。
+> 3. 插件详情页的「配置」区——只有 `启用规则` 开关和 `看门狗秒数` 两个产品原生控件，**没有任何规则/文本输入框**。
 
-## 当前状态（v0.3.0，面板四屏 + 手改提示）
+### 5. 写第一条规则
+
+面板「规则表」页 → 「编辑 JSON」文本框 → 把 `"rules": []` 改成：
+
+```json
+"rules": [
+  { "id": "allow-echo", "tool": "Bash", "commandPattern": "^echo hello$", "decision": "allow" }
+]
+```
+
+点 **「保存规则（写入 → 导出 → 自检）」**。下方日志会依次出现三行：`rules_write：已写入 1 条`、`export_agents：AGENTS.md 已更新`、`selfcheck_run：无 error`。
+
+判定是 **first-match-wins**，数组顺序有意义。
+
+### 6. 写一条内容策略（可选）
+
+面板「内容策略」页 → 多行文本框 → 写自由文本 → 点 **「保存策略（写入 → 导出）」**。
+
+> **保存后对新会话生效**：`AGENTS.md` 是会话开始时的上下文，当前会话里已经加载进去的文字不会因为这次保存而改变；新会话才会读到新内容。
+>
+> **用户级 = 所有工作区、每个会话**：想让某个项目不一样，去那个项目的 `AGENTS.md` 里写，别改这里的用户级策略。
+
+---
+
+## 面板有什么
+
+| 屏 | 内容 |
+| --- | --- |
+| **状态** | 规则 N 条 / 策略空或非空 / 自检 ok·warn·error；总开关由产品设置页控制（面板不提供假开关，也不猜状态） |
+| **规则表** | 表格 + JSON 编辑框；保存走 `rules_write` → `export_agents` → `selfcheck_run` |
+| **内容策略** | 多行文本框；保存走 `content_policy_write` → `export_agents`；「对新会话生效」与「用户级 = 所有工作区」两句都在页面上 |
+| **自检与版本** | 八项自检逐条结果 + 插件版本对 + 备份说明；`AGENTS.md` 段被手改时给出提示与两个动作 |
+
+**手改 `AGENTS.md` 段会怎样**：自检报 `warn`（"段与规则投影不一致：可能被手改，或规则改了没重新导出"），**但不会替你决定以哪边为准，也不会静默覆盖你手改的内容**。两个动作由你点：
+
+- **用真源覆盖 `AGENTS.md`** —— 段内容以规则源为准；
+- **从 `AGENTS.md` 回填真源** —— 段内容反过来成为规则源（带二次确认，会先告诉你要消失/新增哪些规则）。
+
+---
+
+## 升级
+
+```pwsh
+node <CLI> plugins install zcode-rules@my-market   # 同 id 直接重装 = 原地升级
+```
+
+- **直接重装即可**，插件数据目录（你的规则与策略）**不会被删**。
+- **不要先 `uninstall` 再装**：`uninstall` 会删掉数据目录，你的规则和策略会一起丢。
+- **升级后已打开的面板标签要关掉重开**（或重启 ZCode）：面板资源路径里含版本号，旧标签会报 `ENOENT`。
+- 升级后建议在面板点一次「运行检查」，确认 `version` 项显示新版本。
+
+---
+
+## 卸载
+
+```pwsh
+node <CLI> plugins uninstall zcode-rules@my-market --force
+```
+
+**卸载后必须知道的两件事**：
+
+1. **卸载不会摘掉 `AGENTS.md` 里的两个段**。产品只清自己的三处注册（插件缓存 / 安装记录 / 启用开关），不碰你的文件。段还在，内容就还会被注入模型上下文。想干净卸载，请手工删掉 `AGENTS.md` 里 `<!-- BEGIN zcode-rules … -->` 到 `<!-- END zcode-rules -->` 之间（含哨兵行），以及 `zcode-content-policy` 段。
+2. **卸载会删掉插件数据目录**（规则与策略真源）。卸载前先备份：
+
+```pwsh
+Copy-Item -Recurse "$HOME\.zcode\cli\plugins\data\zcode-rules@my-market" "$HOME\zcode-rules-backup"
+```
+
+---
+
+## 自查
+
+面板「自检与版本」页 → 点 **「运行检查」**。八项自检覆盖：规则合法性、策略空/非空、配置无手工 `PermissionRequest` 接线、`AGENTS.md` 存在与尺寸、两段投影是否与真源一致、版本号一致性。
+
+命令行自查（等价）：
+
+```pwsh
+node <本仓库路径>\src\mcp\server.mjs   # stdio MCP server，需由宿主注入 ZCODE_RULES_DATA 才能工作
+```
+
+---
+
+## 常见问题
+
+**Q：插件详情页只有「启用规则」和「看门狗秒数」，规则在哪？**
+A：那两项是产品按 manifest `userConfig` 渲染的原生控件，不是功能界面。规则表与内容策略输入框在侧边面板里，见上文「4. 打开面板」。
+
+**Q：面板按钮点了没反应？**
+A：面板会先跟宿主握手。握手失败时页面顶部会显示明确提示，且除切屏外的按钮保持禁用（不会装可用）。先关掉面板标签重开；仍不行就重启 ZCode。
+
+**Q：我改了 `AGENTS.md` 里的段，插件把我的修改冲掉了？**
+A：不会。自检只报 `warn`，不静默覆盖。只有你点「用真源覆盖」时才会重投影。
+
+**Q：规则没生效？**
+A：先看规则是否命中（`commandPattern` 是正则，`^echo hello$` 只匹配整行完全等于 `echo hello` 的命令）；不命中就是 abstain（交回 ZCode 原逻辑）。面板「运行检查」的 `rules-valid` 项能确认规则本身合法。
+
+**Q：删规则怎么操作？**
+A：面板不提供「一键清空」按钮。在「编辑 JSON」里把 `"rules"` 改成 `[]` 再保存——你能看见内容再确认一次。
+
+**Q：内容策略保存后为什么当前会话没变？**
+A：策略投影到 `AGENTS.md`，而 `AGENTS.md` 是会话开始时的上下文。新会话才会读到新内容。
+
+---
+
+## 故障排查
+
+| 现象 | 排查 |
+| --- | --- |
+| 面板打不开 | 面板是会话级 → 先打开会话；再确认市场里该插件卡片存在（点卡片右上「打开」） |
+| 面板报 `ENOENT` 且路径含旧版本号 | 升级后的旧标签 → 关标签重开或重启 ZCode |
+| 面板显示「没有收到宿主的握手回包」 | 该页被当成静态文件打开了；在 ZCode 面板里打开它，不是双击 HTML |
+| `plugins install` 报 manifest 无效 | 先跑 `plugins validate <仓库路径>` |
+| 安装后 `plugins list` 没有 `hooks: 1` | 检查 `installed_plugins.json` 的 `hooks` 数组；本插件的 hook 是 `PermissionRequest` |
+| 规则一直不生效 | 看 `rules.json` 是否真在插件数据目录（`ZCODE_PLUGIN_DATA`）；面板「运行检查」的 `rules-valid` 与 `rules-section` 两项能分辨「规则非法」与「没重新导出」 |
+
+---
+
+## 开发者参考
+
+以下内容面向维护者，普通用户可跳过。
+
+### 当前状态（v0.4.0）
 
 - **可安装插件壳**：`.zcode-plugin/plugin.json` 声明 `hooks`（PermissionRequest 判定）、`mcpServers`（零依赖 stdio 数据通道）、`ui.surfaces`（面板入口）与 `userConfig`。
-- **hook 入口兜底**：hook 命令指向 `src/hooks/permission-rules-entry.mjs`；`<data>/rules.json` 存在就用它，缺则用仓库根 `rules.default.json`（内置空规则），两者皆缺或 launcher 自身异常也输出显式 abstain——首次安装不会因缺少规则而走看门狗 deny（v0.2.1）。
+- **hook 入口兜底**：hook 命令指向 `src/hooks/permission-rules-entry.mjs`；`<data>/rules.json` 存在就用它，缺则用仓库根 `rules.default.json`（内置空规则），两者皆缺或 launcher 自身异常也输出显式 abstain——首次安装不会因缺少规则而走看门狗 deny。
 - **数据面**：`src/mcp/server.mjs` 是换行分隔 JSON-RPC 2.0 的 stdio MCP server，提供 6 个工具与 1 个 UI 资源；数据目录只认宿主注入的 `ZCODE_RULES_DATA` / `ZCODE_PLUGIN_DATA`，缺失时所有工具调用 fail-closed（不猜路径）。
 - **双哨兵投影**：`src/rules/sections.mjs` 提供通用命名哨兵段引擎；`zcode-rules` 段哨兵**从 `rules-engine.mjs` import**，与既有投影逐字兼容；`zcode-content-policy` 段承载自由文本。
-- **自检**：规则合法性、策略空/非空、两段投影是否被手改、AGENTS.md 尺寸 >90 KiB 预警、版本号一致性、config 无手工 `PermissionRequest` 接线（A 路线残留检查）。
-- **面板（v0.3.0）**：`ui/panel.html` 是**四屏可用面板**（状态 / 规则表 / 内容策略 / 自检与版本），经 `src/mcp/bridge.mjs` 同一套 JSON-RPC over postMessage 调自家 6 个工具；不含假按钮、假开关、无确认的清空，也不写「立即生效」。
-- 机制验证、运行期判据与证据仍以 ZCode 检出 `docs/zcode-mod/` 为准（selfcheck、gates、evidence、plan 均在那里）；ZCode 检出对本仓库而言**只读**，本仓库不回改它。
+- **写入规范化**：`rules_write` 会规范化后写回（补 `description: ""`、键序按 schema 排序）。因此「恢复空规则」后文件字节与原始不同但**语义等价**——判断恢复成功应用语义等价 + 规则集为空 + `AGENTS.md` 投影字节相等。
+- **机制验证、运行期判据与证据**以 ZCode 检出 `docs/zcode-mod/` 为准（selfcheck、gates、evidence、plan 均在那里）；ZCode 检出对本仓库而言**只读**，本仓库不回改它。
 
-## 目录
+### 目录
 
 ```
 .zcode-plugin/
-  plugin.json             # v0.3.0 清单：hooks + mcpServers + ui.surfaces + userConfig
-rules.default.json        # v0.2.1：内置空规则（数据目录无 rules.json 时使用，写操作零副作用）
+  plugin.json             # 清单：hooks + mcpServers + ui.surfaces + userConfig
+rules.default.json        # 内置空规则（数据目录无 rules.json 时使用，写操作零副作用）
 src/
   rules/
     rules-engine.mjs      # 校验 / 判定 / AGENTS.md 段投影 / 一致性自检（参照实现，逐字节保真）
     agents-section.mjs    # 段的定位、幂等 upsert、按 meta 或哨兵摘除（参照实现，逐字节保真）
     export-agents.mjs     # 导出与卸载 CLI（参照实现，逐字节保真）
-    sections.mjs          # 命名哨兵双段引擎（v0.2.0 新增：locate/upsert/remove/snapshot）
+    sections.mjs          # 命名哨兵双段引擎（locate/upsert/remove/snapshot）
   hooks/
     permission-rules.mjs  # PermissionRequest hook：allow / deny / abstain 三态 + 看门狗（参照实现，逐字节保真）
-    permission-rules-entry.mjs # v0.2.1：入口 launcher（数据规则 → 内置空规则 → abstain；委托参考 hook）
+    permission-rules-entry.mjs # 入口 launcher（数据规则 → 内置空规则 → abstain；委托参考 hook）
   mcp/
     operations.mjs        # 数据面：规则/策略读写校验、双哨兵导出、自检、面板渲染
     server.mjs            # 零依赖 stdio MCP server（JSON-RPC 2.0，换行分隔）
-    bridge.mjs            # v0.3.0：面板侧 JSON-RPC over postMessage 最小客户端（零依赖、可单测）
-    agents-backfill.mjs   # v0.3.0：从 AGENTS.md 哨兵段无损反解真源（手改提示的「回填」用）
+    bridge.mjs            # 面板侧 JSON-RPC over postMessage 最小客户端（零依赖、可单测）
+    agents-backfill.mjs   # 从 AGENTS.md 哨兵段无损反解真源（手改提示的「回填」用）
 ui/
-  panel.html              # v0.3.0：四屏面板（状态 / 规则表 / 内容策略 / 自检与版本）
-tests/
-  rules-engine.test.mjs
-  agents-section.test.mjs
-  sections.test.mjs       # v0.2.0 新增
-  operations.test.mjs     # v0.2.0 新增；v0.2.1 追加 config 接线/内置空规则用例；v0.3.0 改 renderPanelHtml 口径
-  mcp-server.test.mjs     # v0.2.0 新增（spawn 真进程跑协议往返）
-  entry.test.mjs          # v0.2.1 新增（hook 入口 launcher 端到端）
-  panel.test.mjs          # v0.3.0 新增（面板静态断言：四屏/禁项/桥接/手改提示）
-  bridge.test.mjs         # v0.3.0 新增（JSON-RPC 帧序列化与解析，假 postMessage target）
-  agents-backfill.test.mjs # v0.3.0 新增（段 → 真源无损反解）
-  index.js                # 目录参数兼容入口（Node 21–24.20）
+  panel.html              # 四屏面板（状态 / 规则表 / 内容策略 / 自检与版本）
+scripts/
+  verify-fidelity.mjs     # 4 个参照实现的 sha256 基线校验（fail-closed）
+  check-docs.mjs          # 文档相对链接与仓库内路径引用检查（静态、无网络）
+  smoke-upgrade.mjs       # P-8 升级模拟（隔离环境）
+tests/                    # node --test 零依赖测试
+FIDELITY.json             # 4 个参照实现的 sha256 基线
+.github/workflows/ci.yml  # CI：verify-fidelity → check-docs → node --test
 ```
 
-## 安装与验证
-
-插件以目录市场（directory source）安装；安装会复制到 ZCode 的插件缓存，并用 `ZCODE_PLUGIN_DATA` 指向持久数据目录。实验一律在隔离 home 中进行（见 ZCode 检出 `docs/zcode-mod/isolation/RECIPE.md`），不要直接对真实 home 跑装/卸。
-
-```pwsh
-# <CLI> = C:\Program Files\ZCode\resources\glm\zcode.cjs
-node <CLI> plugins validate <本仓库路径>       # 期望：Plugin manifest is valid（exit 0）
-node <CLI> plugins marketplace add <市场目录>   # marketplace.json 条目 source 用 directory 源
-node <CLI> plugins install zcode-rules@<市场名>
-node <CLI> plugins list --verbose               # 期望含 hooks: 1 与 mcp: plugin:zcode-rules:zcode-rules
-node <CLI> plugins uninstall zcode-rules@<市场名> --force
-```
-
-数据结构（由宿主注入的数据目录）：
+### 数据结构（由宿主注入的数据目录）
 
 | 文件 | 形态 | 说明 |
 | --- | --- | --- |
@@ -98,146 +250,47 @@ hook 入口的规则选择：`<data>/rules.json` 存在 → 用它；否则 `${Z
 
 `userConfig`：`enabled`（boolean，默认 true）、`watchdogSeconds`（number，默认 120；当前 hook 命令固定 `--watchdog-ms 120000`，本项供面板与后续版本读取）。
 
-## MCP 数据面
+### MCP 数据面
 
-工具（每个写操作只回动作摘要，不回传全文大对象）：
+六个工具：`rules_read` / `rules_write` / `content_policy_read` / `content_policy_write` / `export_agents` / `selfcheck_run`，外加 UI 资源 `ui://zcode-rules/panel.html`。
 
-| 工具 | 作用 |
-| --- | --- |
-| `rules_read` | 读规则；缺省返回 `exists=false`，不是错误 |
-| `rules_write` | 校验并写规则；非法规则 `isError=true` 且不产生/不覆盖文件 |
-| `content_policy_read` | 读自由文本内容策略（缺省空串） |
-| `content_policy_write` | 写自由文本内容策略（空串 = 无策略） |
-| `export_agents` | 双哨兵投影到 `AGENTS.md`；缺文件则创建只含两段的文件；返回动作/尺寸/哈希摘要 |
-| `selfcheck_run` | 只读自检：规则、策略、两段一致性（手改提示）、>90 KiB 预警、版本号、config 无手工 `PermissionRequest` 接线；`rules.json` 缺失时给出「使用内置空规则」info |
+### 面板与桥接
 
-资源：`ui://zcode-rules/panel.html`（`text/html;profile=mcp-app`，返回 `ui/panel.html` 原文）。
+`ui/panel.html` 是四屏可用面板，经 `src/mcp/bridge.mjs` 同一套 JSON-RPC over postMessage 调自家 6 个工具；不含假按钮、假开关、无确认的清空，也不写「立即生效」。
 
-**fail-closed**：`ZCODE_RULES_DATA`（或等价 `ZCODE_PLUGIN_DATA`）缺失时，任何工具调用返回 JSON-RPC error（-32002），不猜目录、不落盘；`AGENTS.md` 默认 `os.homedir()/.zcode/AGENTS.md`（用户级），工具支持 `agentsPath` 覆盖（测试用）。
-
-## 双哨兵投影
-
-`AGENTS.md` 里只有两个由本插件维护的段：
-
-```text
-<!-- BEGIN zcode-rules (generated from JSON, DO NOT EDIT) -->   ← 哨兵 import 自 rules-engine.mjs
-...
-<!-- END zcode-rules -->
-
-<!-- BEGIN zcode-content-policy (free text, DO NOT EDIT) -->
-...
-<!-- END zcode-content-policy -->
-```
-
-- **段外字节不动**：追加/替换只影响段内；替换保留段后原行尾形态（CRLF/LF）。
-- **幂等**：同输入二次导出字节完全相同。
-- **删除只摘段**：哨兵残缺/乱序/重复一律 `refused`，绝不盲删。
-- **不伪造内容**：文件不存在时只生成两个哨兵段，不写任何头部或默认指令。
-- `zcode-rules` 段与 `renderAgentsSection()` 输出逐字符一致（单测断言），因此 `rules-engine.consistencyCheck` 仍然成立。
-
-## 面板（v0.3.0）
-
-`ui/panel.html` 是四屏面板，单文件、零依赖、纯内联 JS（沙箱 iframe 里无法 import 仓库模块）。四个分区各有单一职责，用顶部 tab 切换：
-
-| 屏 | 内容 | 用到的工具 |
-| --- | --- | --- |
-| 状态 | 启用态说明（开关归产品设置页，**面板不提供开关**）+ 徽标「规则 N 条 / 策略 空\|非空 / 自检 ok\|warn\|error」 | `rules_read` / `content_policy_read` / `selfcheck_run` |
-| 规则表 | 表格（id / 工具 / 匹配 / decision / 说明）+ 编辑 JSON 文本域 | `rules_read` / `rules_write` → `export_agents` → `selfcheck_run` |
-| 内容策略 | 多行文本域（默认空）；写「**对新会话生效**」与「用户级 = 所有工作区、每个会话」 | `content_policy_write` + `export_agents` |
-| 自检与版本 | 结果表（id / level / message）+ 版本对 + 备份说明 | `selfcheck_run` |
-
-**手改提示（P-6 用户路径）**：自检的 `rules-section` / `policy-section` 任一条不是 `ok` 时，屏 4 顶部出现提示「AGENTS.md 段被你手动改过，本次不覆盖；以哪边为准由你决定」，并给两个**真实**动作：
-
-- **用真源覆盖 AGENTS.md** → `export_agents`（真源赢）。
-- **从 AGENTS.md 回填真源** → `src/mcp/agents-backfill.mjs` 反解段内容 → `rules_write` / `content_policy_write` → 重新 `export_agents`（段赢）。必须先过二次确认文案；任一段无法**无损**还原时该按钮禁用，面板不给半成品。
-
-**界面纪律（有测试守）**：只画真实能力、一控件一后果、做不了只给说明。具体禁项与验收点：
-
-- 不出现「立即生效」（`tests/panel.test.mjs` 连「立即」二字一起禁）；策略保存后只写「对新会话生效」。
-- 不伪造总开关：面板没有 `input` / `checkbox` / `role="switch"`，只说明开关由产品设置页的 `userConfig.enabled` 控制。
-- 不提供「一键清空规则」；删规则只能改 JSON 文本域再保存。清空已有内容策略必须过二次确认框。
-- 每个 `data-action` 都必须在动作表里有实现，且动作表里没有无人使用的动作（这条同时防假按钮和死代码）。
-- 未收到宿主 `ui/initialize` 回包时，页面不显示任何数值，所有读写按钮禁用。
-
-**回填为什么不重排次序**：`renderAgentsSection` 的投影按 decision 分组渲染（允许 → 询问 → 禁止），组内保序但**跨组次序不可还原**；而 hook 判定是 first-match-wins，次序有语义。所以回填保留当前 `rules.json` 里已有规则的次序，段里新增的 id 追加到末尾，并在确认框里点名「将消失」和「新增」的 id。
-
-### 桥接（`src/mcp/bridge.mjs`）
-
-面板与宿主之间是 JSON-RPC 2.0 over postMessage（与官方 `@modelcontextprotocol/ext-apps` 的 `App` 同形）：
-
-```text
-握手   { jsonrpc:"2.0", id, method:"ui/initialize",          params:{ appInfo, appCapabilities, protocolVersion } }
-       { jsonrpc:"2.0",             method:"ui/notifications/initialized", params:{} }
-工具   { jsonrpc:"2.0", id, method:"tools/call",              params:{ name, arguments } }
-资源   { jsonrpc:"2.0", id, method:"resources/read",          params:{ uri } }
-```
-
-`bridge.mjs` 是同一份逻辑的**可单测**实现（面板里内联的是它，沙箱内没有 import 通路）：id 配对、超时（`BridgeTimeoutError`）、JSON-RPC 错误（`BridgeError`，保留 code/data）、非法帧忽略、`source` 过滤、`dispose` 作废未完成请求。它不缓存业务、不猜数据目录、不重试。
-
-> 握手方法名是 `ui/initialize`（MCP Apps 的扩展方法），**不是** MCP 协议本身的 `initialize`；宿主侧由官方 `AppBridge` 处理（ZCode 检出 `packages/ui/src/plugin-ui/app/pluginUiHostController.ts`），官方 pdf 面板 0.2.2 的打包产物同样发 `ui/initialize`。
-
-## 测试
+### 测试
 
 ```pwsh
 # 仓库根目录执行；零依赖、离线可跑（只用 node: 内置模块）
 node --test tests/
 ```
 
-v0.3.0 共 146 个用例：v0.2.1 既有 86 + 新增 60（面板静态断言 19、桥接 21、段反解 20）。新增测试的夹具全部内联或落在 `os.tmpdir()` 临时目录，不读取 ZCode 检出、不读取真实 home、不写临时目录之外的位置。
+### 来源与保真
 
-`tests/panel.test.mjs` 的「每个 `data-action` 都有实现」与「动作表里没有无人使用的动作」是一对反向断言：前者防假按钮，后者防死代码。想加一个按钮就必须同时写实现，否则测试红。同一文件还会把面板的内联脚本**真编译一遍**（`vm.Script`）——正则断言看不出语法错误，编译能。另外它逐项比对面板内联桥与 `src/mcp/bridge.mjs` 的协议常量，防止两份实现悄悄漂移。
-
-> 静态断言证明不了「点了会怎样」。面板的行为面由 ZCode 检出里的独立脚本验证（不随仓库分发，证据见 `.zhll\rt\wp30\panel-live.mjs` 与 `panel-proof.log` §四·B）：headless Chrome 里放一个按 MCP Apps wire 形状回包的假宿主，加载真面板，断言四屏渲染、徽标、规则表、清空确认、手改提示与回填二次确认、切屏、按钮可用性，外加一个 fail-closed 场景（工具回 -32002 时徽标必须写「读取被拒绝」并显示原因），共 37 项。这条在 v0.3.0 里真抓到一个渲染 bug（占位行渲染成内容为 `5` 的单元格）。
-
-> `tests/index.js` 是 Node 21–24.20 的目录参数兼容入口：上游回归（[nodejs/node#64555](https://github.com/nodejs/node/issues/64555)）里 `node --test <目录>` 会把目录当中单个文件执行并 `MODULE_NOT_FOUND`；该文件只按文件名导入全部 `*.test.mjs`，不改变任何测试内容。上游修复后（或 Node 20）它不会被测试发现机制匹配到。
-
-## 来源与保真
-
-`src/` 下四个参照实现是从 ZCode 检出 `docs/zcode-mod/selfcheck/` 原样复制的（**不改一行**，v0.3.0 仍然逐字节一致）：
-
-| 本仓库文件 | 来源（ZCode 检出，只读） | sha256 |
-| --- | --- | --- |
-| `src/rules/rules-engine.mjs` | `docs/zcode-mod/selfcheck/rules/rules-engine.mjs` | `8d28407ec7feecfefc93975d0be5446c59ef64cf4921040acc5556ee293980bb` |
-| `src/rules/agents-section.mjs` | `docs/zcode-mod/selfcheck/rules/agents-section.mjs` | `3088e7d0692b5703dc8ee77107f6c4eb32a5c01569c076992b417ae1ca4d599f` |
-| `src/rules/export-agents.mjs` | `docs/zcode-mod/selfcheck/rules/export-agents.mjs` | `22f4a0c0a71e8cdbe912b614da0c286a0a3e3f0973dbfdf9ea068a017781b51a` |
-| `src/hooks/permission-rules.mjs` | `docs/zcode-mod/selfcheck/hooks/permission-rules.mjs` | `a8c2121e6e6118cb506faa3e3842527df50fb866f74aa4f7c12c62fb7e464b23` |
-
-`src/rules/sections.mjs`、`src/mcp/operations.mjs`、`src/mcp/server.mjs`、`src/hooks/permission-rules-entry.mjs`、`src/mcp/bridge.mjs`、`src/mcp/agents-backfill.mjs`、`ui/panel.html` 是 v0.2.0–v0.3.0 新增实现，不属于参照实现，不受上述保真约束。
-
-上表的 sha256 **不再靠人肉比对**：基线落在仓库内 `FIDELITY.json`，由脚本对工作树实测值逐条比对（重新生成基线：`node scripts/verify-fidelity.mjs --list`）。基线缺失条目、多出清单外条目、值不是 64 位十六进制，一律 fail-closed —— 否则「删掉一条基线」就能让保真校验静默失效。
-
-## CI 与本地门禁
-
-`.github/workflows/ci.yml` 是唯一的 workflow：`ubuntu-latest` + Node 24，三步全是 `node <脚本>`，**不装依赖、不联网**（本仓库零运行时依赖、零 devDependency，测试与校验脚本只 `import node:` 内置模块）。CI 是回归防线，不是证据源；运行期判据的证据仍落 ZCode 检出的 `docs/zcode-mod/evidence/`。
-
-> 徽章占位：仓库托管到 GitHub 后，把 `<owner>/<repo>` 换成实际值即可启用
-> `![ci](https://github.com/<owner>/<repo>/actions/workflows/ci.yml/badge.svg)`。
-> **托管前不写死徽章**——写一个指向不存在仓库的徽章等于给读者一张 404 图。
-
-三段命令（在仓库根执行，与 CI 逐步对应；全部离线、零依赖）：
+`src/rules/rules-engine.mjs`、`src/rules/agents-section.mjs`、`src/rules/export-agents.mjs`、`src/hooks/permission-rules.mjs` 四个文件是**参照实现**（逐字节保真，源自 ZCode 检出自带的 selfcheck 参照）。校验：
 
 ```pwsh
-node scripts/verify-fidelity.mjs      # 4 个参照实现 vs FIDELITY.json（exit 0 全等 / 1 有差异）
-node scripts/check-docs.mjs           # README/CHANGELOG 的相对链接与仓库内路径引用是否存在
-node --test tests/                    # 单元测试（146 例）
+node scripts/verify-fidelity.mjs
 ```
 
-`npm run verify` 串联前两条（等价于 CI 前两步）；`npm run smoke:upgrade` 是下面的 P-8 升级模拟。
+基线在 `FIDELITY.json`；脚本 fail-closed（基线缺条目 / 多出清单外条目 / 值非法 / 文件缺失，任一即 exit 1）。
+
+### CI 与本地门禁
+
+CI（`.github/workflows/ci.yml`）：`ubuntu-latest` + Node 24，三步 `run`——`verify-fidelity` → `check-docs` → `node --test tests/`；**无任何依赖安装步骤**（零依赖，只用 `actions/checkout` + `actions/setup-node`）。
+
+本地等价：
+
+```pwsh
+node scripts/verify-fidelity.mjs
+node scripts/check-docs.mjs
+node --test tests/
+```
 
 ### P-8 升级模拟（`scripts/smoke-upgrade.mjs`）
 
-验证「换 version 重装」不会丢用户真源：装 v0.3.0 → 经数据面写 1 条规则 + 非空内容策略 → 换 version 重装 → 断言 `rules.json` / `content-policy.json` 字节与 sha256 不变、`AGENTS.md` 投影 sha256 不变（幂等）、插件 id 与 `enabledPlugins` 不变 → 卸载并确认清理。
+隔离环境跑「装 → 写规则与策略 → 换 version 重装 → 断言真源与投影不变 → 卸载」。脚本自带安全门（`HOME` 必须落在隔离目录下，否则 exit 2），且必须经指纹包壳启动。
 
-**必须在隔离 home 里跑**，经指纹包壳启动（真实 home 零触碰；脚本自带安全门，`HOME` 不在 `.zhll/rt/iso-runs/**` 下即 exit 2 拒绝）：
-
-```pwsh
-# 在 ZCode 检出根执行；<插件仓> = 本仓库绝对路径
-node docs/zcode-mod/isolation/tools/run-with-fingerprint.mjs --label wp33-upgrade `
-  -- node "<插件仓>\scripts\smoke-upgrade.mjs" --proof-log .zhll/rt/wp33/upgrade-proof.log
-```
-
-升级走「源副本改 version」：把本仓复制到隔离目录、把副本清单 `version` 改为 0.3.1、市场条目指向副本后再 `plugins install`。**不能**靠改插件缓存里的 manifest——实测 `install` 每次都从市场条目 `source.path` 重新复制、并用**源**清单的 `version` 决定安装版本，改缓存不生效（脚本把这一步当对照观测写进日志，并还原被改的缓存清单）。
-
-## 许可
+### 许可
 
 MIT，见 [LICENSE](LICENSE)。
