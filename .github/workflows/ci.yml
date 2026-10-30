@@ -8,8 +8,16 @@
 # 为什么没有任何依赖安装步骤：本仓库零运行时依赖、零 devDependency，
 # 测试与校验脚本只 import node: 内置模块；装了反而引入供应链面与不必要的失败源。
 #
-# 只跑 ubuntu-latest + node 24：与作者本机（node v24.20.0）一致；多 OS 矩阵见
-# ZCode 检出 `docs/zcode-mod/plan/DELIVERY-ROADMAP.md` §5.1「明确不做」。
+# 为什么跑三个平台：这个插件要交给**别人**在任意机器上装，所以「跨平台可用」
+# 是产品属性而不是作者本机的偶然事实。矩阵覆盖：
+#   · ubuntu-latest —— Linux 桌面用户
+#   · macos-latest  —— macOS 桌面用户
+#   · windows-latest —— Windows 桌面用户
+# Node 只跑 24（与作者本机 node v24.20.0 一致；`node --test <目录>` 在 Node 24
+# 有已知行为差异，见 tests/index.js 的注释）。
+#
+# 注：.github/workflows/ci.yml 自身在 Windows 检出时也会是 LF（.gitattributes 锁定），
+# 但这不影响 runner 执行 —— runner 用的是它自己的 shell。
 name: ci
 
 on:
@@ -21,16 +29,21 @@ permissions:
 
 jobs:
   verify:
-    name: verify (node 24)
-    runs-on: ubuntu-latest
+    name: verify (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ['24']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node 24
+      - name: Setup Node ${{ matrix.node }}
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: ${{ matrix.node }}
 
       - name: 参照实现保真（4 文件 sha256）
         run: node scripts/verify-fidelity.mjs

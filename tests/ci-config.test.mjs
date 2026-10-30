@@ -22,9 +22,13 @@ const RUN_STEPS = [...BODY.matchAll(/^\s*run:\s*(.+)$/gmu)].map((m) => m[1].trim
 const USES = [...BODY.matchAll(/uses:\s*(\S+)/gu)].map((m) => m[1].trim());
 
 describe(".github/workflows/ci.yml（判据 C5）", () => {
-  test("runner 与 Node 版本：ubuntu-latest + node 24（与作者本机一致）", () => {
-    assert.match(BODY, /^\s*runs-on:\s*ubuntu-latest\s*$/mu);
-    assert.match(BODY, /node-version:\s*'?24'?\s*$/mu);
+  test("矩阵覆盖三个平台 + Node 24（跨平台是产品属性：插件交给任意机器上的用户用）", () => {
+    assert.match(BODY, /^\s*os:\s*\[ubuntu-latest, macos-latest, windows-latest\]\s*$/mu);
+    assert.match(BODY, /^\s*node:\s*\['24'\]\s*$/mu);
+    assert.match(BODY, /runs-on:\s*\$\{\{\s*matrix\.os\s*\}\}/u);
+    assert.match(BODY, /node-version:\s*\$\{\{\s*matrix\.node\s*\}\}/u);
+    // fail-fast: false —— 一个平台失败时仍要看另外两个平台的结果
+    assert.match(BODY, /fail-fast:\s*false/u);
   });
 
   test("恰好三个 run 步骤，且分别就是三段门禁", () => {

@@ -1,0 +1,14 @@
+# 行尾策略：仓库内一律 LF（跨平台一致），检出时不做转换。
+#
+# 为什么：
+#   · 本仓库有**逐字节 sha256 基线**（FIDELITY.json）与逐行解析的校验脚本；
+#     CRLF/LF 混用会让「文件内容」随平台变化，破坏这些判据。
+#   · 段投影（AGENTS.md 的哨兵段）用 indexOf 定位标记并按字节切片；
+#     行尾不一致会让「段外内容不变」这条保证变得脆弱。
+#   · 免去 Windows 开发者 clone 后的整仓 diff 噪音。
+* text=auto eol=lf
+
+# 明确声明二进制（若有）
+*.png binary
+*.jpg binary
+*.zip binary
