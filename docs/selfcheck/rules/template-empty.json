@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "name": "空模板（未启用任何放行策略）",
+  "description": "这是一份空模板。默认不放行任何东西；所有请求都按产品原行为处理（unmatched=abstain）。",
+  "unmatched": "abstain",
+  "onTimeout": "deny",
+  "watchdogMs": 120000,
+  "rules": []
+}

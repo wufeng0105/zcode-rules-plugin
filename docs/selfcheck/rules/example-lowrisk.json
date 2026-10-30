@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "name": "示例：只读与低危命令",
+  "description": "示例规则集（**不是默认放行策略**）。演示三种 decision 的写法与注释要求。放行哪些工具由使用者自行决定。",
+  "unmatched": "abstain",
+  "onTimeout": "deny",
+  "watchdogMs": 120000,
+  "rules": [
+    {
+      "id": "example-readonly-git",
+      "tool": "Bash",
+      "commandPattern": "^git (status|log --oneline -n \\d+|diff --stat)$",
+      "decision": "allow",
+      "comment": "只读 git 查询，无副作用；示例用，请按自己的判断增删"
+    },
+    {
+      "id": "example-list-dir",
+      "tool": "Bash",
+      "commandPattern": "^(ls|Get-ChildItem)( -[a-zA-Z]+)* [^|;&>]*$",
+      "decision": "allow",
+      "comment": "列目录，无写入；示例用"
+    },
+    {
+      "id": "example-block-rm-rf-root",
+      "tool": "Bash",
+      "commandPattern": "rm\\s+-rf?\\s+(/|~|\\$HOME|C:\\\\?)(\\s|$)",
+      "decision": "deny",
+      "comment": "禁止删除根或家目录；即使是示例也给一条 deny，让读者看到拒绝的写法"
+    },
+    {
+      "id": "example-ask-deploy",
+      "tool": "Bash",
+      "commandPattern": "^(npm|pnpm|yarn)\\s+(publish|deploy)",
+      "decision": "ask",
+      "comment": "发布类命令应询问；注意本版本 hook 无法表达 ask，会按 unmatched 处理（此处为演示 schema）"
+    }
+  ]
+}

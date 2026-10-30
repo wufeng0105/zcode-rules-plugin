@@ -28,6 +28,21 @@
 
 ---
 
+## 文档索引
+
+| 你想知道 | 看哪份 |
+| --- | --- |
+| 怎么装、怎么写第一条规则 | [QUICKSTART.md](QUICKSTART.md)（一页纸） |
+| 面板在哪、按钮是什么意思 | 本文「面板在哪」「面板有什么」两节 |
+| 规则/策略没生效怎么查 | 本文「常见问题」「故障排查」两节 |
+| **这个插件真的生效吗？验证过什么？** | [docs/VERIFICATION.md](docs/VERIFICATION.md) |
+| 想改代码 | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| 发现安全问题 | [SECURITY.md](SECURITY.md) |
+| 版本变化 | [CHANGELOG.md](CHANGELOG.md) |
+| 许可 | [LICENSE](LICENSE) |
+
+---
+
 ## 五分钟上手
 
 ### 1. 准备市场（一次即可）
@@ -261,6 +276,13 @@ hook 入口的规则选择：`<data>/rules.json` 存在 → 用它；否则 `${Z
 
 `ui/panel.html` 是四屏可用面板，经 `src/mcp/bridge.mjs` 同一套 JSON-RPC over postMessage 调自家 6 个工具；不含假按钮、假开关、无确认的清空，界面也不承诺规则会即时生效。
 
+### 随仓附带的验证工具（`docs/`）
+
+| 目录 | 内容 |
+| --- | --- |
+| `docs/VERIFICATION.md` | 已在真实环境验证过的结论汇总（hook 决策生效、面板链路、卸载闭环、契约边界） |
+| `docs/selfcheck/` | ZCode 自带验证脚本的**逐字节参照副本** + `selfcheck.mjs`（八项自检的独立实现）；`rules/` 与 `hooks/` 下的文件与 `src/` 内同名文件逐字节相同（`verify-fidelity` 保证） |
+| `docs/isolation/` | 隔离配方 `RECIPE.md` 与工具（`run-with-fingerprint.mjs` 指纹包壳、`fingerprint.mjs` 前后对比、`probe-child.mjs` 探针）。**装/卸类验证请在隔离环境跑，不要直接对真实 home 操作** |
 ### 测试
 
 ```pwsh
