@@ -95,11 +95,11 @@ hook 与客户端权限应答**并行**执行，hook 先给出决策即生效。
 | 3 | **`rules_write` 会规范化写回** | 补 `description: ""`、键序按 schema 排序 ⇒「恢复空规则」是**语义等价**，不是字节相等 |
 | 4 | **内容策略对新会话生效** | `AGENTS.md` 是会话开始时的上下文，当前会话已加载的文字不会因此改变 |
 
-## 八、自检八项
+## 八、自检九项
 
 面板「运行检查」覆盖：
 
-`rules-valid`（规则合法与条数）/ `policy-state`（策略空或非空）/ `config-no-manual-hooks`（配置无手工 `PermissionRequest` 接线）/ `agents-exists` / `agents-size`（≤ 90 KiB）/ `rules-section`（段与投影一致）/ `policy-section` / `version`（版本号一致）。
+`data-dir`（数据目录与真源存在性，v0.4.1 新增）/ `rules-valid`（规则合法与条数）/ `policy-state`（策略空或非空）/ `config-no-manual-hooks`（配置无手工 `PermissionRequest` 接线）/ `agents-exists` / `agents-size`（≤ 90 KiB）/ `rules-section`（哨兵段与投影一致）/ `policy-section` / `version`（版本号一致）。
 
 ## 九、CI 回归防线
 
