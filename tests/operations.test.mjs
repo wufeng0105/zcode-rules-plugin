@@ -377,16 +377,16 @@ test("runSelfcheck：config 非法 JSON → warning（无法确认无接线）",
   assert.match(check.message, /未能确认/);
 });
 
-test("renderPanelHtml 与 ui/panel.html 逐字节一致，且无假按钮/脚本", () => {
+test("renderPanelHtml 与 ui/panel.html 逐字节一致，且按钮都有实现（v0.3.0 起面板可交互）", () => {
   const html = renderPanelHtml();
   assert.equal(html, readFileSync(panelPath(), "utf8"));
 
   const pkg = readJson(join(REPO_ROOT, "package.json"));
   assert.ok(html.includes(`v${pkg.version}`), "面板版本号必须与 package.json 一致");
-  assert.ok(html.includes("面板四屏在 M3 实现"));
-  assert.ok(!/<button\b/i.test(html), "禁止假按钮");
-  assert.ok(!/\bonclick\s*=/i.test(html), "禁止假交互");
-  assert.ok(!/<script\b/i.test(html), "静态占位页不应有脚本");
-  assert.ok(!/<form\b/i.test(html), "静态占位页不应有表单");
+  // v0.3.0：面板是四屏可用面板（不再是静态占位）。禁项改由 tests/panel.test.mjs 逐条断言；
+  // 这里只守住「从 operations 取到的就是仓里那份文件」与最硬的两条纪律。
+  assert.ok(!/\bonclick\s*=/i.test(html), "禁止内联事件处理器");
+  assert.ok(!/立即生效/.test(html), "禁止「立即生效」措辞");
+  assert.ok(!/<script[^>]+src=/i.test(html), "禁止外部脚本（沙箱内零依赖）");
 });
 

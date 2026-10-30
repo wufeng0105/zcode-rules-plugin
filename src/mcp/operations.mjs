@@ -26,6 +26,7 @@ import {
   sectionSnapshot,
   upsertNamedSection,
 } from "../rules/sections.mjs";
+import { readPolicySection, readRulesSection } from "./agents-backfill.mjs";
 
 export const RULES_FILE = "rules.json";
 export const POLICY_FILE = "content-policy.json";
@@ -378,6 +379,7 @@ export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
     add("data-dir", "error", String(error?.message ?? error));
     return {
       ok: false,
+      backfill: null,
       checks,
       summary: {
         agentsBytes: 0,
@@ -447,6 +449,8 @@ export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
   const agentsExists = existsSync(target);
   let agentsText = "";
   let agentsBytes = 0;
+  // P-6 用户路径需要的「从 AGENTS.md 回填」候选：只有能无损还原成真源时才给（否则 ok=false）。
+  let backfill = null;
   if (!agentsExists) {
     add("agents-exists", "warn", "AGENTS.md 不存在（尚未导出规则段）", target);
   } else {
@@ -521,6 +525,38 @@ export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
         }
       }
     }
+
+    // 3.5) 手改提示（P-6）的两个真实动作所需的候选：
+    //   · overwrite：export_agents（真源 → AGENTS.md），无需服务端额外数据
+    //   · backfill ：读 AGENTS.md 的段内容并反解成真源，面板二次确认后走 rules_write / content_policy_write
+    const rulesSection = readRulesSection(agentsText, rulesLoaded.ok ? rulesLoaded.rules : null);
+    const policySection = readPolicySection(agentsText);
+    backfill = {
+      policy: {
+        malformed: policySection.malformed,
+        ok: policySection.ok,
+        present: policySection.present,
+        reason: policySection.reason ?? null,
+        roundTrip: policySection.roundTrip,
+        text: policySection.ok ? policySection.text : null,
+      },
+      rules: {
+        appendedIds: rulesSection.suggested?.appendedIds ?? [],
+        droppedIds: rulesSection.suggested?.droppedIds ?? [],
+        errors: rulesSection.errors,
+        malformed: rulesSection.malformed,
+        ok: rulesSection.ok,
+        orderChanged: rulesSection.suggested?.orderChanged ?? false,
+        present: rulesSection.present,
+        reason: rulesSection.reason ?? null,
+        roundTrip: rulesSection.roundTrip,
+        // 段内解析出的原始次序（展示用）；真正写回时用 suggested（保真源次序）
+        rules: rulesSection.ok ? rulesSection.rules : null,
+        suggested: rulesSection.suggested?.rules ?? null,
+        suggestedErrors: rulesSection.suggested?.errors ?? [],
+      },
+      warnings: rulesSection.warnings,
+    };
   }
 
   // 4) 版本号
@@ -544,6 +580,8 @@ export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
   const warnings = checks.filter((check) => check.level === "warn").length;
   return {
     ok: errors === 0,
+    // 屏 4「手改提示」用：段不一致（非 ok）时的两个真实动作所需数据；AGENTS.md 不存在时为 null。
+    backfill,
     checks,
     summary: {
       agentsBytes,

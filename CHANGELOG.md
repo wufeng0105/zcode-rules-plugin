@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## 0.3.0（2026-10-30）
+
+面板四屏 + 手改提示用户路径（M3 · T33）：
+
+- `ui/panel.html` 从 128 行静态占位升级为**四屏可用面板**（单页分区 tab，一屏一职责，零依赖纯内联 JS，共 45 KB）：
+  1. **状态**：启用态说明（开关归产品设置页的 `userConfig.enabled`，面板**不提供开关**、也读不到当前值）+ 三个徽标「规则 N 条 / 策略 空|非空 / 自检 ok|warn|error」。
+  2. **规则表**：`rules_read` 渲染表格（id / 工具 / 匹配 / decision / 说明）+ 「编辑 JSON」文本域保存走 `rules_write`，保存成功后自动 `export_agents` → `selfcheck_run` 并逐步显示结果；**不提供**「一键清空规则」按钮。
+  3. **内容策略**：多行文本域，默认空；保存走 `content_policy_write` + `export_agents`；界面写「保存后**对新会话生效**」与「**用户级 = 所有工作区、每个会话**；想让某个项目不同，去那个项目的 AGENTS.md」；清空已有策略必须过二次确认。
+  4. **自检与版本**：`selfcheck_run` 结果表（id / level / message）、版本对（面板内置 / 清单 / ZCode 版本，取不到显示「未知」不猜）、备份说明（卸载不还原 AGENTS.md，要清理请手动删哨兵段）。
+  - **P-6 手改提示**：`rules-section` / `policy-section` 非 ok 时屏 4 顶部显示「AGENTS.md 段被你手动改过，本次不覆盖；以哪边为准由你决定」，并给两个**真实**动作——「用真源覆盖 AGENTS.md」（`export_agents`）与「从 AGENTS.md 回填真源」（`rules_write` / `content_policy_write` + 重新导出，带二次确认，两段都不可无损还原时按钮禁用）。
+  - 未收到宿主握手时不显示任何数值、所有读写按钮禁用（不伪造状态）。
+- `src/mcp/bridge.mjs`（新，零依赖）：JSON-RPC 2.0 over postMessage 最小客户端——帧形状 `{ jsonrpc: "2.0", id, method, params }`、`tools/call` 参数 `{ name, arguments }`、`ui/initialize` → `ui/notifications/initialized` 握手、`resources/read`；含 id 配对、超时、非法帧忽略、source 过滤、dispose 作废。面板内联同一逻辑（沙箱 iframe 无法 import 仓库模块），bridge.mjs 保留可单测实现。
+- `src/mcp/agents-backfill.mjs`（新）：从 AGENTS.md 的 `zcode-rules` / `zcode-content-policy` 段**无损**反解真源。规则段严格按 `renderAgentsSection` 的投影格式解析，并要求「回渲后与文件里的段逐字（按行尾归一化）相同」才 `ok=true`；因投影按 decision 分组、跨组次序不可还原，回填时**保留当前 rules.json 的次序**并报 `orderChanged` / `appendedIds` / `droppedIds`，`description` 沿用真源。
+- `src/mcp/operations.mjs`：`runSelfcheck` 返回值新增 `backfill`（供屏 4 手改提示用；AGENTS.md 不存在或数据目录缺失时为 `null`），其余判定与返回值不变。
+- `tests/panel.test.mjs`（新，19 例）：四屏标题与分区、禁项（无「立即生效」/无 input 假开关/无清空规则类按钮/清空策略必须确认）、**每个 `data-action` 都有实现且没有无人使用的动作**（假按钮判定）、无内联事件与外部脚本、桥接函数与六个工具调用、规则表五列与「写入 → 导出 → 自检」顺序、策略两句措辞、自检表/版本对/备份说明、手改提示双动作与二次确认文案、徽标三态、未连接不伪造数据、**内联脚本真编译一遍**（`vm.Script`，静态正则抓不到语法错误）、**内联桥与 `bridge.mjs` 的协议常量逐项一致**（防两份实现漂移）。
+- `tests/bridge.test.mjs`（新，21 例）：帧形状四键、通知无 id、`tools/call` 参数形状、`parseFrame` 四分类、id 配对（乱序回包/并发六请求）、错误与退化错误码、非法帧不结算、source 过滤、超时与迟到回包、握手成功才补 `initialized`、`resources/read`、`unwrapToolResult`、通知分发与退订、dispose、`targetOrigin`。
+- `tests/agents-backfill.test.mjs`（新，20 例）：反解逐字段还原、次序保持与 append/drop、CRLF/LF、段缺失/残缺/坏格式/条目数不符/段尾说明被删各种拒绝、policy 逐字往返、格式常量与引擎输出一致、EOL 工具函数。
+- `tests/operations.test.mjs`：`renderPanelHtml` 用例从「静态占位页无按钮/无脚本」改为 v0.3.0 口径（逐字节一致 + 无内联事件 + 无「立即生效」+ 无外部脚本），禁项细化到 `tests/panel.test.mjs`。
+- 版本：`package.json` / `.zcode-plugin/plugin.json` / 面板版本字样 → `0.3.0`；`README.md` 面板与桥接章节重写。
+- 证据：`.zhll\rt\wp30\panel-proof.log`（C1–C7 逐条 + C4 MCP 往返 + 面板真跑 + C7 越界）、`.zhll\rt\wp30\smoke-v0.3.0.log`、隔离包壳日志 `docs\zcode-mod\evidence\rt-iso-wp30-plugin-smoke.log`（ZCode 检出，gitignored）。
+- **面板真跑**（`.zhll\rt\wp30\panel-live.mjs`）：headless Chrome + 假 MCP Apps 宿主（按 wire 形状回 `ui/initialize` / `tools/call`），37 项断言全过——四屏可见、三徽标按假数据面渲染、规则表 2 行 5 列、策略框回填真源、清空策略先弹确认、手改提示横幅与文案、回填按钮可用且点开二次确认、取消后不写、切屏只显示一屏、连上后无禁用按钮，外加 fail-closed 场景（工具回 -32002 时徽标写「读取被拒绝」并显示服务端原话）。这条补的是静态断言抓不到的行为面，开发中真抓到一个渲染 bug（整行说明被渲染成内容为 `5` 的单元格），已修并加静态回归断言。
+- 四个参照实现（`rules-engine.mjs` / `agents-section.mjs` / `export-agents.mjs` / `permission-rules.mjs`）**未改一行**，sha256 与 ZCode 检出全等。
+
 ## 0.2.1（2026-10-30）
 
 hook 入口兜底 + selfcheck「config 无手工接线」（M2 · R1）：

@@ -13,26 +13,30 @@
         --fg: #e6e8ee;
         --muted: #9aa3b2;
         --accent: #7aa2f7;
+        --ok: #3fb950;
+        --warn: #d29922;
+        --err: #f85149;
+        --chip: rgba(122, 162, 247, 0.12);
       }
       * {
         box-sizing: border-box;
       }
       body {
         margin: 0;
-        padding: 24px;
+        padding: 20px;
         background: var(--bg);
         color: var(--fg);
-        font: 14px/1.65 "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+        font: 14px/1.6 "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
       }
       main {
-        max-width: 760px;
+        max-width: 900px;
         margin: 0 auto;
         display: grid;
-        gap: 16px;
+        gap: 14px;
       }
       header {
         border-bottom: 1px solid var(--border);
-        padding-bottom: 16px;
+        padding-bottom: 12px;
       }
       .eyebrow {
         margin: 0;
@@ -42,24 +46,191 @@
         text-transform: uppercase;
       }
       h1 {
-        margin: 4px 0 6px;
-        font-size: 26px;
+        margin: 4px 0 4px;
+        font-size: 22px;
         line-height: 1.2;
-      }
-      h2 {
-        margin: 0 0 8px;
-        font-size: 16px;
       }
       .meta {
         margin: 0;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12.5px;
       }
-      section {
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      nav button {
+        background: var(--card);
+        border: 1px solid var(--border);
+        color: var(--fg);
+        border-radius: 999px;
+        padding: 6px 14px;
+        font: inherit;
+        cursor: pointer;
+      }
+      nav button[aria-current="true"] {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      section.screen {
         background: var(--card);
         border: 1px solid var(--border);
         border-radius: 10px;
         padding: 16px;
+      }
+      section.screen[hidden] {
+        display: none;
+      }
+      h2 {
+        margin: 0 0 4px;
+        font-size: 16px;
+      }
+      h3 {
+        margin: 16px 0 6px;
+        font-size: 14px;
+        color: var(--accent);
+      }
+      .sub {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 12.5px;
+      }
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 8px 0 0;
+      }
+      .badge {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 12.5px;
+        background: var(--chip);
+      }
+      .badge[data-level="ok"] {
+        border-color: var(--ok);
+        color: var(--ok);
+      }
+      .badge[data-level="warn"] {
+        border-color: var(--warn);
+        color: var(--warn);
+      }
+      .badge[data-level="error"] {
+        border-color: var(--err);
+        color: var(--err);
+      }
+      .switch-note {
+        border: 1px dashed var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 8px 0 0;
+        font-size: 13px;
+      }
+      th,
+      td {
+        border-bottom: 1px solid var(--border);
+        padding: 6px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      td code,
+      p code,
+      li code {
+        background: var(--chip);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 12px;
+      }
+      .row-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 12px 0 0;
+      }
+      .row-actions button,
+      .confirm button {
+        background: var(--chip);
+        border: 1px solid var(--border);
+        color: var(--fg);
+        border-radius: 6px;
+        padding: 6px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .row-actions button[data-kind="primary"] {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .row-actions button[data-kind="danger"],
+      .confirm button[data-kind="danger"] {
+        border-color: var(--err);
+        color: var(--err);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      textarea {
+        width: 100%;
+        min-height: 190px;
+        margin: 8px 0 0;
+        background: #0c0e12;
+        color: var(--fg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        font-family: "Cascadia Mono", Consolas, monospace;
+        font-size: 12.5px;
+        line-height: 1.5;
+        resize: vertical;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 12.5px;
+        margin: 10px 0 0;
+      }
+      .banner {
+        border: 1px solid var(--warn);
+        border-radius: 8px;
+        padding: 12px;
+        margin: 0 0 14px;
+        background: rgba(210, 153, 34, 0.1);
+      }
+      .banner h3 {
+        margin: 0 0 6px;
+        color: var(--warn);
+      }
+      .banner[hidden] {
+        display: none;
+      }
+      .confirm {
+        border: 1px solid var(--err);
+        border-radius: 8px;
+        padding: 12px;
+        margin: 12px 0 0;
+        background: rgba(248, 81, 73, 0.08);
+      }
+      .confirm[hidden] {
+        display: none;
+      }
+      .confirm p {
+        margin: 0 0 10px;
+        font-size: 13px;
       }
       ul {
         margin: 8px 0 0;
@@ -68,17 +239,33 @@
       li + li {
         margin-top: 4px;
       }
-      code {
-        background: rgba(122, 162, 247, 0.12);
-        border-radius: 4px;
-        padding: 1px 5px;
-        font-family: "Cascadia Mono", Consolas, monospace;
-        font-size: 12.5px;
+      .log {
+        margin: 12px 0 0;
+        border-top: 1px solid var(--border);
+        padding-top: 10px;
       }
-      .note {
-        margin: 10px 0 0;
+      .log ol {
+        margin: 6px 0 0;
+        padding-left: 20px;
+        font-size: 12.5px;
         color: var(--muted);
+      }
+      .log li[data-level="error"] {
+        color: var(--err);
+      }
+      .log li[data-level="warn"] {
+        color: var(--warn);
+      }
+      .connect-error {
+        border: 1px solid var(--err);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin: 0 0 14px;
+        color: var(--err);
         font-size: 13px;
+      }
+      .connect-error[hidden] {
+        display: none;
       }
     </style>
   </head>
@@ -87,42 +274,1015 @@
       <header>
         <p class="eyebrow">ZCode Rules</p>
         <h1>ZCode 规则</h1>
-        <p class="meta">插件版本 <strong>v0.2.1</strong> · 面板形态：静态占位（session 级）</p>
+        <p class="meta">
+          面板内置版本 <strong id="panel-version">v0.3.0</strong> · 空规则 + 空策略 = 零行为变化 · 本页所有数据都来自本插件的
+          MCP 工具，不缓存、不猜测
+        </p>
       </header>
 
-      <section aria-labelledby="status-heading">
-        <h2 id="status-heading">当前状态</h2>
-        <p>
-          本页为静态占位页，不含任何交互控件。当前规则与内容策略状态由 MCP 工具返回，面板不缓存、不猜测：
+      <p class="connect-error" id="connect-error" hidden>
+        没有收到宿主（ZCode）的握手回包。本页可能被当作静态文件打开，而不是在 ZCode 面板里运行；此时所有读写按钮都保持不可用，页面上也不会显示任何示例数据。
+      </p>
+
+      <nav aria-label="面板分区">
+        <button type="button" data-action="tab" data-tab="status" aria-current="true">状态</button>
+        <button type="button" data-action="tab" data-tab="rules">规则表</button>
+        <button type="button" data-action="tab" data-tab="policy">内容策略</button>
+        <button type="button" data-action="tab" data-tab="check">自检与版本</button>
+      </nav>
+
+      <!-- 屏 1：总开关 + 状态徽标 -->
+      <section class="screen" id="screen-status" aria-labelledby="status-heading">
+        <h2 id="status-heading">状态</h2>
+        <p class="sub">插件启用态、规则条数、策略空/非空与最近一次自检结果。</p>
+
+        <h3>总开关</h3>
+        <p class="switch-note">
+          启用开关由<strong>产品设置页</strong>的插件配置（清单里的 <code>userConfig.enabled</code>）决定；本面板<strong>不提供开关</strong>，
+          也读不到它当前是开还是关（MCP 工具没有暴露这一项），所以这里不显示任何开关控件，也不替产品猜一个状态。
         </p>
-        <ul>
-          <li><code>rules_read</code> / <code>rules_write</code> — 结构化规则（<code>rules.json</code>）</li>
-          <li>
-            <code>content_policy_read</code> / <code>content_policy_write</code> — 自由文本内容策略（<code>content-policy.json</code>）
-          </li>
-          <li><code>export_agents</code> — 把两段投影到 <code>AGENTS.md</code>（双哨兵）</li>
-          <li><code>selfcheck_run</code> — 规则 / 策略 / 投影 / 尺寸 / 版本自检</li>
-        </ul>
+
+        <h3>状态徽标</h3>
+        <div class="badges" id="status-badges" aria-live="polite">
+          <span class="badge" id="badge-rules">规则：待读取</span>
+          <span class="badge" id="badge-policy">策略：待读取</span>
+          <span class="badge" id="badge-selfcheck">自检：待运行</span>
+        </div>
+        <div class="connect-error" id="read-errors" hidden></div>
+
         <p class="note">
-          空规则 + 空策略 = 零行为变化：不写规则时，本插件不改变 ZCode 的任何默认判定。
+          空规则 + 空策略 = 零行为变化：不写规则时，本插件不改变 ZCode 的任何默认判定（未命中一律 abstain）。
         </p>
+        <div class="row-actions">
+          <button type="button" data-action="refresh-all" data-kind="primary">重新读取全部</button>
+        </div>
+        <div class="log" id="status-log" hidden>
+          <h3>本次操作</h3>
+          <ol id="status-log-list"></ol>
+        </div>
       </section>
 
-      <section aria-labelledby="data-heading">
-        <h2 id="data-heading">数据目录</h2>
-        <p>
-          数据目录由宿主在启动 MCP server 时通过 <code>ZCODE_RULES_DATA</code>（等价
-          <code>ZCODE_PLUGIN_DATA</code>）注入；本页不读写磁盘，也不猜测路径。
+      <!-- 屏 2：规则表 + 编辑 + 保存 -->
+      <section class="screen" id="screen-rules" aria-labelledby="rules-heading" hidden>
+        <h2 id="rules-heading">规则表</h2>
+        <p class="sub">
+          数据来源 <code>rules_read</code>；保存走 <code>rules_write</code>，保存成功后自动 <code>export_agents</code> 与
+          <code>selfcheck_run</code>，结果显示在下方。
         </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">id</th>
+              <th scope="col">工具</th>
+              <th scope="col">匹配</th>
+              <th scope="col">decision</th>
+              <th scope="col">说明</th>
+            </tr>
+          </thead>
+          <tbody id="rules-tbody">
+            <tr>
+              <td colspan="5">尚未读取。</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>编辑 JSON</h3>
+        <p class="sub">
+          写的是真源 <code>rules.json</code>；非法规则会被 <code>rules_write</code> 拒绝且不产生/不覆盖文件。判定是
+          first-match-wins，数组次序有语义，请保持你想要的次序。
+        </p>
+        <textarea id="rules-editor" spellcheck="false" aria-label="规则 JSON 文本域">{
+  "version": 1,
+  "name": "我的规则",
+  "unmatched": "abstain",
+  "rules": []
+}
+</textarea>
+        <div class="row-actions">
+          <button type="button" data-action="reload-rules">用真源重置文本域</button>
+          <button type="button" data-action="save-rules" data-kind="primary">保存规则（写入 → 导出 → 自检）</button>
+        </div>
         <p class="note">
-          <code>AGENTS.md</code> 默认指向用户级 <code>~/.zcode/AGENTS.md</code>；导出与自检都支持显式路径覆盖。
+          不提供「一键删除全部规则」的按钮：删规则请在上面把 <code>rules</code> 改成空数组再保存，你能看到 JSON 再确认一次。
         </p>
+        <div class="log" id="rules-log" hidden>
+          <h3>本次保存</h3>
+          <ol id="rules-log-list"></ol>
+        </div>
       </section>
 
-      <section aria-labelledby="roadmap-heading">
-        <h2 id="roadmap-heading">路线图</h2>
-        <p>面板四屏在 M3 实现：规则、策略、投影预览、自检。v0.2.1 只提供本占位页与 MCP 数据面。</p>
+      <!-- 屏 3：内容策略 -->
+      <section class="screen" id="screen-policy" aria-labelledby="policy-heading" hidden>
+        <h2 id="policy-heading">内容策略</h2>
+        <p class="sub">
+          自由文本，默认空（空 = 无策略 = 零行为变化）。保存走 <code>content_policy_write</code> + <code>export_agents</code>。
+        </p>
+        <textarea id="policy-editor" spellcheck="false" placeholder="留空表示不写内容策略" aria-label="内容策略文本域"></textarea>
+        <p class="note">
+          <strong>保存后对新会话生效</strong>：AGENTS.md 是会话开始时的上下文，当前会话里已经加载进去的文字不会因为这次保存而改变；新会话才会读到新内容。
+        </p>
+        <p class="note">
+          <strong>用户级 = 所有工作区、每个会话</strong>；想让某个项目不同，去那个项目的 <code>AGENTS.md</code> 里写，别改这里的用户级策略。
+        </p>
+        <div class="row-actions">
+          <button type="button" data-action="reload-policy">用真源重置文本域</button>
+          <button type="button" data-action="save-policy" data-kind="primary">保存策略（写入 → 导出）</button>
+        </div>
+        <div class="confirm" id="confirm-empty-policy" hidden>
+          <p>
+            你正在把内容策略保存为<strong>空文本</strong>，这等于删掉当前这段用户级策略（所有工作区、每个会话都不再有它）。这一步没有撤销按钮，要恢复只能重新写一遍。
+          </p>
+          <div class="row-actions">
+            <button type="button" data-action="confirm-empty-policy" data-kind="danger">确认保存为空（删除策略）</button>
+            <button type="button" data-action="cancel-pending">取消</button>
+          </div>
+        </div>
+        <div class="log" id="policy-log" hidden>
+          <h3>本次保存</h3>
+          <ol id="policy-log-list"></ol>
+        </div>
+      </section>
+
+      <!-- 屏 4：自检 + 版本对 + 备份说明 -->
+      <section class="screen" id="screen-check" aria-labelledby="check-heading" hidden>
+        <h2 id="check-heading">自检与版本</h2>
+        <p class="sub">数据来源 <code>selfcheck_run</code>（只读，不写任何文件）。</p>
+
+        <div class="banner" id="handedit-banner" hidden role="alert">
+          <h3>AGENTS.md 段被你手动改过，本次不覆盖；以哪边为准由你决定</h3>
+          <p class="sub" id="handedit-detail"></p>
+          <div class="row-actions">
+            <button type="button" data-action="overwrite-agents" data-kind="primary">用真源覆盖 AGENTS.md</button>
+            <button type="button" data-action="request-backfill">从 AGENTS.md 回填真源</button>
+          </div>
+          <div class="confirm" id="confirm-backfill" hidden>
+            <p>
+              这一步会<strong>用 AGENTS.md 段里的文字覆盖真源</strong>（<code>rules.json</code> / <code>content-policy.json</code>）。窗口里的文字只有这些：
+              如果段里是被误改的内容，误改就会变成新的真源；随后还会再导出一次 AGENTS.md。次序方面：投影按 decision 分组，
+              first-match-wins 的原始次序无法从段里还原，回填会保留当前真源里已有规则的次序，段里新增的规则追加到末尾。
+            </p>
+            <p class="sub" id="backfill-summary"></p>
+            <div class="row-actions">
+              <button type="button" data-action="confirm-backfill" data-kind="danger">确认回填（覆盖真源）</button>
+              <button type="button" data-action="cancel-pending">取消</button>
+            </div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">id</th>
+              <th scope="col">level</th>
+              <th scope="col">message</th>
+            </tr>
+          </thead>
+          <tbody id="checks-tbody">
+            <tr>
+              <td colspan="3">尚未运行自检。</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="row-actions">
+          <button type="button" data-action="run-selfcheck" data-kind="primary">运行检查</button>
+        </div>
+
+        <h3>版本对</h3>
+        <table>
+          <tbody>
+            <tr>
+              <th scope="row">面板内置版本</th>
+              <td id="version-panel">v0.3.0</td>
+            </tr>
+            <tr>
+              <th scope="row">自检报告里的插件版本</th>
+              <td id="version-selfcheck">（运行检查后显示）</td>
+            </tr>
+            <tr>
+              <th scope="row">ZCode 版本</th>
+              <td id="version-zcode">（握手后显示）</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note" id="version-note">
+          面板内置版本写死在 <code>ui/panel.html</code> 里；插件清单版本由 <code>selfcheck_run</code> 报告。ZCode 版本只能从握手回包的
+          <code>hostInfo</code> 拿——那是 MCP Apps 宿主名与版本串（宿主当前给的是 <code>zcode</code>），<strong>不是</strong>
+          产品版本号，所以取不到数字版本时这里明确显示「未知」，不拿它冒充。
+        </p>
+
+        <h3>备份说明</h3>
+        <p class="note">
+          卸载本插件<strong>不会还原也不会删除</strong> AGENTS.md：卸载只摘插件目录与产品注册，<code>BEGIN</code>/<code>END</code>
+          之间那段文字会留在文件里。要清理请<strong>手动删</strong>两个哨兵段之间的内容（<code>zcode-rules</code> 与
+          <code>zcode-content-policy</code>，连同 <code>BEGIN</code>/<code>END</code> 两行）。本面板没有「卸载时自动清理」这类能力，也不提供。
+        </p>
+        <p class="note">
+          数据面文件位置由宿主通过 <code>ZCODE_PLUGIN_DATA</code> 注入，面板读不到绝对路径；自检的 detail 列会带上工具看到的路径。
+        </p>
+        <div class="log" id="check-log" hidden>
+          <h3>本次操作</h3>
+          <ol id="check-log-list"></ol>
+        </div>
       </section>
     </main>
+
+    <script>
+      "use strict";
+      // ---------------------------------------------------------------------
+      // 内联桥：与 src/mcp/bridge.mjs 同一逻辑（沙箱 iframe 里无法 import 仓库模块）。
+      // 帧形状：{ jsonrpc: "2.0", id, method, params }；tools/call 参数 { name, arguments }。
+      // ---------------------------------------------------------------------
+      const Bridge = (() => {
+        const PROTOCOL_VERSION = "2026-01-26";
+        const DEFAULT_TIMEOUT_MS = 15000;
+        const HANDSHAKE_TIMEOUT_MS = 4000;
+        const pending = new Map();
+        let seq = 0;
+        let disposed = false;
+
+        const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+
+        function parseFrame(data) {
+          if (!isRecord(data) || data.jsonrpc !== "2.0") return null;
+          const hasId = Object.prototype.hasOwnProperty.call(data, "id");
+          const hasMethod = typeof data.method === "string" && data.method !== "";
+          if (hasMethod) return hasId ? null : { kind: "notification", frame: data };
+          if (!hasId) return null;
+          if (!Object.prototype.hasOwnProperty.call(data, "result") && !isRecord(data.error)) return null;
+          return { kind: "response", frame: data };
+        }
+
+        function settle(frame) {
+          const entry = pending.get(frame.id);
+          if (!entry) return;
+          pending.delete(frame.id);
+          clearTimeout(entry.timer);
+          if (isRecord(frame.error)) {
+            entry.reject(
+              Object.assign(new Error(typeof frame.error.message === "string" ? frame.error.message : "JSON-RPC error"), {
+                code: typeof frame.error.code === "number" ? frame.error.code : -32603,
+              }),
+            );
+            return;
+          }
+          entry.resolve(frame.result);
+        }
+
+        window.addEventListener("message", (event) => {
+          if (disposed) return;
+          if (event.source !== window.parent) return;
+          const parsed = parseFrame(event.data);
+          if (parsed && parsed.kind === "response") settle(parsed.frame);
+        });
+
+        function request(method, params, timeoutMs) {
+          if (disposed) return Promise.reject(new Error("桥已关闭"));
+          const id = ++seq;
+          const limit = typeof timeoutMs === "number" ? timeoutMs : DEFAULT_TIMEOUT_MS;
+          const frame = { jsonrpc: "2.0", id, method, params: params || {} };
+          return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+              pending.delete(id);
+              reject(Object.assign(new Error(method + " 超时（" + limit + "ms 没有回包）"), { code: -32001 }));
+            }, limit);
+            pending.set(id, { reject, resolve, timer });
+            try {
+              window.parent.postMessage(frame, "*");
+            } catch (error) {
+              pending.delete(id);
+              clearTimeout(timer);
+              reject(error);
+            }
+          });
+        }
+
+        function callTool(name, args) {
+          return request("tools/call", { name, arguments: args || {} });
+        }
+
+        function readResource(uri) {
+          return request("resources/read", { uri });
+        }
+
+        async function initialize(appInfo) {
+          const result = await request(
+            "ui/initialize",
+            {
+              appCapabilities: {},
+              appInfo: appInfo || { name: "zcode-rules-panel", version: "0.3.0" },
+              protocolVersion: PROTOCOL_VERSION,
+            },
+            HANDSHAKE_TIMEOUT_MS,
+          );
+          window.parent.postMessage({ jsonrpc: "2.0", method: "ui/notifications/initialized", params: {} }, "*");
+          return result;
+        }
+
+        function unwrapToolResult(result) {
+          if (!isRecord(result)) return { data: null, isError: false };
+          const isError = result.isError === true;
+          const first = Array.isArray(result.content) ? result.content[0] : undefined;
+          const text = isRecord(first) && typeof first.text === "string" ? first.text : null;
+          if (text === null) return { data: null, isError };
+          try {
+            return { data: JSON.parse(text), isError };
+          } catch {
+            return { data: null, isError };
+          }
+        }
+
+        return {
+          callTool,
+          initialize,
+          readResource,
+          unwrapToolResult,
+          get pendingCount() {
+            return pending.size;
+          },
+        };
+      })();
+
+      // ---------------------------------------------------------------------
+      // 状态与渲染
+      // ---------------------------------------------------------------------
+      const PANEL_VERSION = "0.3.0";
+      const state = {
+        busy: false,
+        connected: false,
+        errors: {},
+        hostContext: null,
+        hostInfo: null,
+        pending: null,
+        policy: null,
+        rules: null,
+        selfcheck: null,
+      };
+
+      const $ = (id) => document.getElementById(id);
+
+      function setText(id, text) {
+        const node = $(id);
+        if (node) node.textContent = text;
+      }
+
+      function logTo(boxId, listId, entries) {
+        const box = $(boxId);
+        const list = $(listId);
+        if (!box || !list) return;
+        list.replaceChildren();
+        for (const entry of entries) {
+          const li = document.createElement("li");
+          li.textContent = entry.text;
+          if (entry.level) li.dataset.level = entry.level;
+          list.append(li);
+        }
+        box.hidden = entries.length === 0;
+      }
+
+      function setBadge(id, text, level) {
+        const node = $(id);
+        if (!node) return;
+        node.textContent = text;
+        if (level) node.dataset.level = level;
+        else delete node.dataset.level;
+      }
+
+      function levelRank(level) {
+        return level === "error" ? 3 : level === "warn" ? 2 : level === "ok" ? 1 : 0;
+      }
+
+      function worstLevel(checks) {
+        let worst = "ok";
+        for (const check of checks || []) {
+          if (levelRank(check.level) > levelRank(worst)) worst = check.level;
+        }
+        return worst;
+      }
+
+      function renderStatus() {
+        // 读取失败（含服务端 fail-closed 的 -32002）时，徽标写成败因，不留在「待读取」装没事。
+        const failedReads = Object.keys(state.errors);
+        if (state.rules) {
+          if (!state.rules.ok) {
+            setBadge("badge-rules", "规则：读取失败", "error");
+          } else if (!state.rules.exists) {
+            setBadge("badge-rules", "规则：0 条（真源尚未创建）", "warn");
+          } else {
+            const count = Array.isArray(state.rules.rules?.rules) ? state.rules.rules.rules.length : 0;
+            setBadge("badge-rules", "规则：" + count + " 条", "ok");
+          }
+        } else if (state.errors.rules_read) {
+          setBadge("badge-rules", "规则：读取被拒绝", "error");
+        }
+        if (state.policy) {
+          if (!state.policy.ok) {
+            setBadge("badge-policy", "策略：读取失败", "error");
+          } else if (String(state.policy.text || "").trim() === "") {
+            setBadge("badge-policy", "策略：空", "ok");
+          } else {
+            setBadge("badge-policy", "策略：非空（" + state.policy.text.length + " 字符）", "ok");
+          }
+        } else if (state.errors.content_policy_read) {
+          setBadge("badge-policy", "策略：读取被拒绝", "error");
+        }
+        if (state.selfcheck) {
+          const summary = state.selfcheck.summary || {};
+          const level = state.selfcheck.ok ? worstLevel(state.selfcheck.checks) : "error";
+          const label =
+            level === "error"
+              ? "自检：error"
+              : level === "warn"
+                ? "自检：warn（" + (summary.warnings ?? 0) + " 条提示）"
+                : "自检：ok";
+          setBadge("badge-selfcheck", label, level);
+        } else if (state.errors.selfcheck_run) {
+          setBadge("badge-selfcheck", "自检：无法运行", "error");
+        }
+        // 被拒绝的读写原因单列一条，用户能直接看到「数据目录未配置」这类硬信息。
+        const errorBox = $("read-errors");
+        if (errorBox) {
+          if (failedReads.length === 0) {
+            errorBox.hidden = true;
+            errorBox.replaceChildren();
+          } else {
+            errorBox.hidden = false;
+            errorBox.replaceChildren();
+            for (const tool of failedReads) {
+              const line = document.createElement("p");
+              line.textContent = tool + " 被拒绝：" + state.errors[tool];
+              errorBox.append(line);
+            }
+          }
+        }
+      }
+
+      // 一行「整行说明」（colspan=5）。单独一个函数，避免把 colspan 数字当成单元格文本。
+      function noticeRow(body, text) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.textContent = text;
+        tr.append(td);
+        body.append(tr);
+      }
+
+      function appendRow(body, cells) {
+        const tr = document.createElement("tr");
+        for (const [kind, value] of cells) {
+          const td = document.createElement("td");
+          if (kind === "code") {
+            const code = document.createElement("code");
+            code.textContent = String(value);
+            td.append(code);
+          } else {
+            td.textContent = String(value);
+          }
+          tr.append(td);
+        }
+        body.append(tr);
+      }
+
+      function renderRulesTable() {
+        const body = $("rules-tbody");
+        if (!body) return;
+        body.replaceChildren();
+        if (!state.rules) {
+          // 读取被拒绝时不能说「尚未读取」——那是把失败伪装成还没开始。
+          noticeRow(body, state.errors.rules_read ? "规则读取失败：" + state.errors.rules_read : "尚未读取。");
+          return;
+        }
+        if (!state.rules.ok) {
+          noticeRow(body, "规则读取失败：" + (state.rules.errors || []).join(" ; "));
+          return;
+        }
+        if (!state.rules.exists) {
+          noticeRow(body, "真源 rules.json 尚未创建（当前等价空规则）。");
+          return;
+        }
+        const list = state.rules.rules?.rules ?? [];
+        if (list.length === 0) {
+          noticeRow(body, "规则集为空：所有请求都按产品原行为处理。");
+          return;
+        }
+        for (const rule of list) {
+          appendRow(body, [
+            ["code", rule.id],
+            ["code", rule.tool],
+            ["text", rule.commandPattern ? "/" + rule.commandPattern + "/" : "（不限命令）"],
+            ["code", rule.decision],
+            ["text", rule.comment || "（未写说明）"],
+          ]);
+        }
+      }
+
+      function renderChecks() {
+        const body = $("checks-tbody");
+        if (!body) return;
+        body.replaceChildren();
+        if (!state.selfcheck) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 3;
+          td.textContent = "尚未运行自检。";
+          tr.append(td);
+          body.append(tr);
+          return;
+        }
+        for (const check of state.selfcheck.checks || []) {
+          const tr = document.createElement("tr");
+          const idCell = document.createElement("td");
+          const code = document.createElement("code");
+          code.textContent = check.id;
+          idCell.append(code);
+          const levelCell = document.createElement("td");
+          levelCell.textContent = check.level;
+          levelCell.dataset.level = check.level;
+          const messageCell = document.createElement("td");
+          messageCell.textContent = check.message + (check.detail ? "（" + check.detail + "）" : "");
+          tr.append(idCell, levelCell, messageCell);
+          body.append(tr);
+        }
+      }
+
+      function sectionCheck(prefix) {
+        const checks = state.selfcheck?.checks ?? [];
+        return checks.find((check) => check.id === prefix) ?? null;
+      }
+
+      function renderHandedit() {
+        const banner = $("handedit-banner");
+        if (!banner) return;
+        const rulesCheck = sectionCheck("rules-section");
+        const policyCheck = sectionCheck("policy-section");
+        const hit = [rulesCheck, policyCheck].filter((check) => check && check.level !== "ok");
+        if (hit.length === 0) {
+          banner.hidden = true;
+          return;
+        }
+        banner.hidden = false;
+        const parts = hit.map((check) => check.id + "：" + check.message);
+        const backfill = state.selfcheck?.backfill;
+        if (backfill) {
+          parts.push(
+            "回填可用性 — 规则段：" +
+              (backfill.rules?.ok ? "可无损回填" : "不可回填（" + ((backfill.rules?.errors || []).join(" ; ") || backfill.rules?.reason || "段结构异常") + "）") +
+              "；策略段：" +
+              (backfill.policy?.ok ? "可无损回填" : "不可回填（" + (backfill.policy?.reason || "段结构异常") + "）"),
+          );
+        }
+        const backfillButton = banner.querySelector('[data-action="request-backfill"]');
+        const canBackfill = Boolean(
+          backfill && ((backfill.rules && backfill.rules.ok) || (backfill.policy && backfill.policy.ok)),
+        );
+        if (backfillButton) {
+          backfillButton.disabled = !canBackfill;
+          backfillButton.title = canBackfill ? "" : "自检报告说这一段无法无损还原成真源，面板不会给出半成品";
+        }
+        setText("handedit-detail", parts.join("　·　"));
+      }
+
+      function renderVersions() {
+        setText("version-panel", "v" + PANEL_VERSION);
+        const reported = state.selfcheck?.summary?.version;
+        setText("version-selfcheck", reported ? "v" + reported : "（运行检查后显示）");
+        if (state.hostInfo) {
+          const name = typeof state.hostInfo.name === "string" ? state.hostInfo.name : "未知";
+          const version = typeof state.hostInfo.version === "string" ? state.hostInfo.version : "未知";
+          const numeric = /^\d+\.\d+/.test(version);
+          setText(
+            "version-zcode",
+            numeric ? version : "未知（宿主 hostInfo：name=" + name + "，version=" + version + "；该串不是数字版本号）",
+          );
+        } else {
+          setText("version-zcode", state.connected ? "未知（握手回包没有 hostInfo）" : "（握手后显示）");
+        }
+        const manifestVersion = reported;
+        if (manifestVersion && manifestVersion !== PANEL_VERSION) {
+          setText(
+            "version-note",
+            "面板内置版本与插件清单版本不一致：面板 " + PANEL_VERSION + " / 清单 " + manifestVersion + "。多半是装了旧插件缓存，重装插件后再看。",
+          );
+        } else {
+          setText(
+            "version-note",
+            "面板内置版本写死在 ui/panel.html 里；插件清单版本由 selfcheck_run 报告。ZCode 版本只能从握手回包的 hostInfo 拿——那是 MCP Apps 宿主名与版本串（宿主当前给的是 zcode），不是产品版本号，所以取不到数字版本时这里明确显示「未知」，不拿它冒充。",
+          );
+        }
+      }
+
+      function renderAll() {
+        renderStatus();
+        renderRulesTable();
+        renderChecks();
+        renderHandedit();
+        renderVersions();
+      }
+
+      function editorText() {
+        return $("rules-editor") ? $("rules-editor").value : "";
+      }
+
+      function setEditorText(text) {
+        if ($("rules-editor")) $("rules-editor").value = text;
+      }
+
+      function setPolicyTextarea(text) {
+        if ($("policy-editor")) $("policy-editor").value = text;
+      }
+
+      function rulesToEditorText(payload) {
+        if (payload && payload.ok && payload.exists && payload.rules) {
+          return JSON.stringify(payload.rules, null, 2);
+        }
+        return JSON.stringify({ version: 1, name: "我的规则", unmatched: "abstain", rules: [] }, null, 2);
+      }
+
+      // ---------------------------------------------------------------------
+      // 数据读取
+      // ---------------------------------------------------------------------
+      async function callToolData(name, args) {
+        const result = await Bridge.callTool(name, args);
+        return Bridge.unwrapToolResult(result);
+      }
+
+      async function refreshAll(logBox) {
+        const entries = [];
+        state.errors = {};
+        try {
+          const rules = await callToolData("rules_read", {});
+          state.rules = rules.data;
+          entries.push({
+            level: rules.data && rules.data.ok ? null : "warn",
+            text: "rules_read：" + (rules.data?.exists ? "已读取真源（" + (rules.data.rules?.rules?.length ?? 0) + " 条）" : "真源尚未创建"),
+          });
+        } catch (error) {
+          state.rules = null;
+          state.errors.rules_read = error.message;
+          entries.push({ level: "error", text: "rules_read 失败：" + error.message });
+        }
+        try {
+          const policy = await callToolData("content_policy_read", {});
+          state.policy = policy.data;
+          setPolicyTextarea(policy.data?.text ?? "");
+          entries.push({
+            level: policy.data && policy.data.ok ? null : "warn",
+            text: "content_policy_read：" + (String(policy.data?.text || "").trim() === "" ? "空策略" : "非空策略"),
+          });
+        } catch (error) {
+          state.policy = null;
+          state.errors.content_policy_read = error.message;
+          entries.push({ level: "error", text: "content_policy_read 失败：" + error.message });
+        }
+        try {
+          const selfcheck = await callToolData("selfcheck_run", {});
+          state.selfcheck = selfcheck.data;
+          entries.push({
+            level: selfcheck.data && selfcheck.data.ok ? null : "warn",
+            text:
+              "selfcheck_run：" +
+              (selfcheck.data?.ok ? "无 error" : "有 error") +
+              "（warn " +
+              (selfcheck.data?.summary?.warnings ?? 0) +
+              " / error " +
+              (selfcheck.data?.summary?.errors ?? 0) +
+              "）",
+          });
+        } catch (error) {
+          state.selfcheck = null;
+          state.errors.selfcheck_run = error.message;
+          entries.push({ level: "error", text: "selfcheck_run 失败：" + error.message });
+        }
+        if (state.rules) setEditorText(rulesToEditorText(state.rules));
+        renderAll();
+        if (logBox) logTo(logBox[0], logBox[1], entries);
+        return entries;
+      }
+
+      // ---------------------------------------------------------------------
+      // 动作表：每个 data-action 必须在这里有实现（没有实现就是假按钮）
+      // ---------------------------------------------------------------------
+      const ACTIONS = {
+        "refresh-all": async () => {
+          await refreshAll(["status-log", "status-log-list"]);
+        },
+        "tab": async (button) => {
+          const target = button.dataset.tab;
+          for (const section of document.querySelectorAll("section.screen")) {
+            section.hidden = section.id !== "screen-" + target;
+          }
+          for (const navButton of document.querySelectorAll("nav button")) {
+            navButton.setAttribute("aria-current", String(navButton === button));
+          }
+        },
+        "reload-rules": async () => {
+          setEditorText(rulesToEditorText(state.rules));
+          logTo("rules-log", "rules-log-list", [{ text: "文本域已按真源重置（未写入任何文件）。" }]);
+        },
+        "save-rules": async () => {
+          const entries = [];
+          let parsed;
+          try {
+            parsed = JSON.parse(editorText());
+          } catch (error) {
+            logTo("rules-log", "rules-log-list", [{ level: "error", text: "JSON 解析失败，未写入：" + error.message }]);
+            return;
+          }
+          let write;
+          try {
+            write = await callToolData("rules_write", { rules: parsed });
+          } catch (error) {
+            logTo("rules-log", "rules-log-list", [{ level: "error", text: "rules_write 失败：" + error.message }]);
+            return;
+          }
+          const payload = write.data || {};
+          if (!payload.ok) {
+            const errors = (payload.errors || []).join(" ; ") || "未知原因";
+            logTo("rules-log", "rules-log-list", [
+              { level: "error", text: "规则被拒绝，未写入任何文件：" + errors },
+            ]);
+            renderAll();
+            return;
+          }
+          entries.push({ text: "rules_write：已写入 " + payload.ruleCount + " 条（" + payload.bytes + " B）" });
+          try {
+            const exported = await callToolData("export_agents", {});
+            const done = exported.data || {};
+            entries.push({
+              level: done.ok ? null : "error",
+              text:
+                "export_agents：" +
+                (done.ok
+                  ? "AGENTS.md " + (done.created ? "已创建" : done.changed ? "已更新" : "无变化") + "（" + done.bytes + " B）"
+                  : "失败 —— " + ((done.errors || []).join(" ; ") || "未知原因")),
+            });
+          } catch (error) {
+            entries.push({ level: "error", text: "export_agents 失败：" + error.message });
+          }
+          try {
+            const selfcheck = await callToolData("selfcheck_run", {});
+            state.selfcheck = selfcheck.data;
+            entries.push({
+              level: selfcheck.data?.ok ? null : "warn",
+              text:
+                "selfcheck_run：" +
+                (selfcheck.data?.ok ? "无 error" : "有 error") +
+                "（warn " + (selfcheck.data?.summary?.warnings ?? 0) + " / error " + (selfcheck.data?.summary?.errors ?? 0) + "）",
+            });
+          } catch (error) {
+            entries.push({ level: "error", text: "selfcheck_run 失败：" + error.message });
+          }
+          try {
+            const rules = await callToolData("rules_read", {});
+            state.rules = rules.data;
+            setEditorText(rulesToEditorText(state.rules));
+          } catch (error) {
+            entries.push({ level: "error", text: "rules_read（回读）失败：" + error.message });
+          }
+          renderAll();
+          logTo("rules-log", "rules-log-list", entries);
+        },
+        "reload-policy": async () => {
+          setPolicyTextarea(state.policy?.text ?? "");
+          logTo("policy-log", "policy-log-list", [{ text: "文本域已按真源重置（未写入任何文件）。" }]);
+        },
+        "save-policy": async () => {
+          const text = $("policy-editor") ? $("policy-editor").value : "";
+          const current = String(state.policy?.text ?? "");
+          if (text === "" && current.trim() !== "") {
+            // 无确认的清空是禁项：保存为空 = 删掉现有策略，必须先确认。
+            $("confirm-empty-policy").hidden = false;
+            state.pending = { kind: "empty-policy" };
+            logTo("policy-log", "policy-log-list", [
+              { level: "warn", text: "文本域为空，而真源里已有策略：需要你在下面确认一次才会写入。" },
+            ]);
+            return;
+          }
+          await writePolicy(text);
+        },
+        "confirm-empty-policy": async () => {
+          $("confirm-empty-policy").hidden = true;
+          state.pending = null;
+          await writePolicy($("policy-editor") ? $("policy-editor").value : "");
+        },
+        "cancel-pending": async () => {
+          $("confirm-empty-policy").hidden = true;
+          $("confirm-backfill").hidden = true;
+          state.pending = null;
+          logTo("check-log", "check-log-list", [{ text: "已取消，未写入任何文件。" }]);
+        },
+        "run-selfcheck": async () => {
+          const entries = [];
+          try {
+            const selfcheck = await callToolData("selfcheck_run", {});
+            state.selfcheck = selfcheck.data;
+            entries.push({
+              level: selfcheck.data?.ok ? null : "warn",
+              text:
+                "selfcheck_run：" +
+                (selfcheck.data?.ok ? "无 error" : "有 error") +
+                "（warn " + (selfcheck.data?.summary?.warnings ?? 0) + " / error " + (selfcheck.data?.summary?.errors ?? 0) + "）",
+            });
+          } catch (error) {
+            entries.push({ level: "error", text: "selfcheck_run 失败：" + error.message });
+          }
+          renderAll();
+          logTo("check-log", "check-log-list", entries);
+        },
+        "overwrite-agents": async () => {
+          const entries = [];
+          try {
+            const exported = await callToolData("export_agents", {});
+            const done = exported.data || {};
+            entries.push({
+              level: done.ok ? null : "error",
+              text:
+                "export_agents：" +
+                (done.ok
+                  ? "已用真源覆盖 AGENTS.md 的两个哨兵段（" + (done.created ? "新建文件" : done.changed ? "已更新" : "无变化") + "，" + done.bytes + " B）"
+                  : "失败 —— " + ((done.errors || []).join(" ; ") || "未知原因")),
+            });
+          } catch (error) {
+            entries.push({ level: "error", text: "export_agents 失败：" + error.message });
+          }
+          try {
+            const selfcheck = await callToolData("selfcheck_run", {});
+            state.selfcheck = selfcheck.data;
+          } catch (error) {
+            entries.push({ level: "error", text: "selfcheck_run 失败：" + error.message });
+          }
+          renderAll();
+          logTo("check-log", "check-log-list", entries);
+        },
+        "request-backfill": async () => {
+          const backfill = state.selfcheck?.backfill || null;
+          const rulesOk = Boolean(backfill && backfill.rules && backfill.rules.ok);
+          const policyOk = Boolean(backfill && backfill.policy && backfill.policy.ok);
+          if (!rulesOk && !policyOk) {
+            $("confirm-backfill").hidden = true;
+            logTo("check-log", "check-log-list", [
+              { level: "error", text: "自检报告说两段都无法无损还原成真源，面板不会给出半成品；请先手动核对 AGENTS.md 的哨兵段。" },
+            ]);
+            return;
+          }
+          const summary = [];
+          summary.push("规则段：" + (rulesOk ? "会写入 " + (backfill.rules.suggested?.rules?.rules?.length ?? 0) + " 条规则" : "跳过（不可无损还原）"));
+          if (rulesOk) {
+            const suggested = backfill.rules.suggested;
+            if (suggested) {
+              if ((suggested.appendedIds || []).length > 0) summary.push("新增 " + suggested.appendedIds.join(" / "));
+              if ((suggested.droppedIds || []).length > 0) summary.push("将消失 " + suggested.droppedIds.join(" / "));
+              if (suggested.orderChanged) summary.push("次序按当前真源保留（段内分组次序不作为依据）");
+            }
+          }
+          summary.push("策略段：" + (policyOk ? (String(backfill.policy.text ?? "") === "" ? "会写入空策略" : "会写入 " + backfill.policy.text.length + " 字符") : "跳过（不可无损还原）"));
+          $("confirm-backfill").hidden = false;
+          setText("backfill-summary", summary.join("　·　"));
+          logTo("check-log", "check-log-list", [{ level: "warn", text: "回填需要二次确认：请看下面的红框，确认后才会写文件。" }]);
+        },
+        "confirm-backfill": async () => {
+          const backfill = state.selfcheck?.backfill || null;
+          const entries = [];
+          $("confirm-backfill").hidden = true;
+          state.pending = null;
+          if (backfill && backfill.rules && backfill.rules.ok && backfill.rules.suggested) {
+            try {
+              const written = await callToolData("rules_write", { rules: backfill.rules.suggested.rules });
+              const payload = written.data || {};
+              entries.push({
+                level: payload.ok ? null : "error",
+                text: payload.ok ? "rules_write：已从 AGENTS.md 回填 " + payload.ruleCount + " 条规则" : "rules_write 失败：" + (payload.errors || []).join(" ; "),
+              });
+            } catch (error) {
+              entries.push({ level: "error", text: "rules_write 失败：" + error.message });
+            }
+          } else {
+            entries.push({ text: "规则段：跳过（自检报告说不可无损还原）" });
+          }
+          if (backfill && backfill.policy && backfill.policy.ok) {
+            try {
+              const written = await callToolData("content_policy_write", { text: backfill.policy.text ?? "" });
+              const payload = written.data || {};
+              entries.push({
+                level: payload.ok ? null : "error",
+                text: payload.ok ? "content_policy_write：已从 AGENTS.md 回填策略（" + payload.textChars + " 字符）" : "content_policy_write 失败：" + (payload.errors || []).join(" ; "),
+              });
+            } catch (error) {
+              entries.push({ level: "error", text: "content_policy_write 失败：" + error.message });
+            }
+          } else {
+            entries.push({ text: "策略段：跳过（自检报告说不可无损还原）" });
+          }
+          try {
+            const exported = await callToolData("export_agents", {});
+            const done = exported.data || {};
+            entries.push({
+              level: done.ok ? null : "error",
+              text: done.ok ? "export_agents：已按回填后的真源重写 AGENTS.md（" + done.bytes + " B）" : "export_agents 失败：" + (done.errors || []).join(" ; "),
+            });
+          } catch (error) {
+            entries.push({ level: "error", text: "export_agents 失败：" + error.message });
+          }
+          await refreshAll(null);
+          logTo("check-log", "check-log-list", entries);
+        },
+      };
+
+      async function writePolicy(text) {
+        const entries = [];
+        try {
+          const written = await callToolData("content_policy_write", { text });
+          const payload = written.data || {};
+          if (!payload.ok) {
+            logTo("policy-log", "policy-log-list", [
+              { level: "error", text: "content_policy_write 失败：" + ((payload.errors || []).join(" ; ") || "未知原因") },
+            ]);
+            return;
+          }
+          entries.push({ text: "content_policy_write：已写入（" + payload.textChars + " 字符 / " + payload.textBytes + " B）" });
+        } catch (error) {
+          logTo("policy-log", "policy-log-list", [{ level: "error", text: "content_policy_write 失败：" + error.message }]);
+          return;
+        }
+        try {
+          const exported = await callToolData("export_agents", {});
+          const done = exported.data || {};
+          entries.push({
+            level: done.ok ? null : "error",
+            text: done.ok
+              ? "export_agents：AGENTS.md " + (done.created ? "已创建" : done.changed ? "已更新" : "无变化") + "（" + done.bytes + " B）"
+              : "export_agents 失败：" + ((done.errors || []).join(" ; ") || "未知原因"),
+          });
+        } catch (error) {
+          entries.push({ level: "error", text: "export_agents 失败：" + error.message });
+        }
+        try {
+          const policy = await callToolData("content_policy_read", {});
+          state.policy = policy.data;
+          entries.push({ text: "content_policy_read：真源已回读（" + (String(state.policy?.text || "").trim() === "" ? "空" : "非空") + "）" });
+        } catch (error) {
+          entries.push({ level: "error", text: "content_policy_read 失败：" + error.message });
+        }
+        try {
+          const selfcheck = await callToolData("selfcheck_run", {});
+          state.selfcheck = selfcheck.data;
+        } catch (error) {
+          entries.push({ level: "error", text: "selfcheck_run 失败：" + error.message });
+        }
+        entries.push({ text: "提示：这次保存对新会话生效，当前会话已加载的上下文不因此改变。" });
+        renderAll();
+        logTo("policy-log", "policy-log-list", entries);
+      }
+
+      function disabledWhenOffline() {
+        for (const button of document.querySelectorAll("button[data-action]")) {
+          if (button.dataset.action === "tab") continue;
+          button.disabled = !state.connected;
+        }
+      }
+
+      document.addEventListener("click", (event) => {
+        const button = event.target instanceof HTMLElement ? event.target.closest("button[data-action]") : null;
+        if (!button) return;
+        const action = ACTIONS[button.dataset.action];
+        if (!action) return;
+        if (state.busy && button.dataset.action !== "tab") return;
+        state.busy = true;
+        Promise.resolve(action(button))
+          .catch((error) => {
+            logTo("status-log", "status-log-list", [{ level: "error", text: "动作失败：" + error.message }]);
+          })
+          .finally(() => {
+            state.busy = false;
+          });
+      });
+
+      async function boot() {
+        try {
+          const init = await Bridge.initialize({ name: "zcode-rules-panel", version: PANEL_VERSION });
+          state.connected = true;
+          state.hostInfo = init && init.hostInfo ? init.hostInfo : null;
+          state.hostContext = init && init.hostContext ? init.hostContext : null;
+          const banner = $("connect-error");
+          if (banner) banner.hidden = true;
+          await refreshAll(["status-log", "status-log-list"]);
+        } catch (error) {
+          state.connected = false;
+          const banner = $("connect-error");
+          if (banner) {
+            banner.hidden = false;
+            banner.textContent =
+              "没有收到宿主（ZCode）的握手回包（" + error.message + "）。本页可能被当作静态文件打开，而不是在 ZCode 面板里运行；所有读写按钮保持不可用，页面不显示任何示例数据。";
+          }
+          setBadge("badge-rules", "规则：未连接", "warn");
+          setBadge("badge-policy", "策略：未连接", "warn");
+          setBadge("badge-selfcheck", "自检：未连接", "warn");
+        } finally {
+          disabledWhenOffline();
+        }
+      }
+
+      boot();
+    </script>
   </body>
 </html>
