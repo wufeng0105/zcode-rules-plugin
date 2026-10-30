@@ -27,7 +27,7 @@ src/
     permission-rules.mjs  # PermissionRequest hook：allow / deny / abstain 三态 + 看门狗（参照实现，逐字节保真）
     permission-rules-entry.mjs # 入口 launcher（数据规则 → 内置空规则 → abstain；委托参考 hook）
   mcp/
-    operations.mjs        # 数据面：规则/策略读写校验、双哨兵导出、自检、面板渲染
+    operations.mjs        # 数据面：规则/策略读写校验、哨兵段导出、自检、面板渲染
     server.mjs            # 零依赖 stdio MCP server（JSON-RPC 2.0，换行分隔）
     bridge.mjs            # 面板侧 JSON-RPC over postMessage 最小客户端（零依赖、可单测）
     agents-backfill.mjs   # 从 AGENTS.md 哨兵段无损反解真源（手改提示的「回填」用）
