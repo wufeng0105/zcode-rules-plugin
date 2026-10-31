@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/wufeng0105/zcode-rules-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/wufeng0105/zcode-rules-plugin/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![version](https://img.shields.io/badge/version-0.4.2-informational.svg)](https://github.com/wufeng0105/zcode-rules-plugin/releases)
+[![version](https://img.shields.io/badge/version-0.4.3-informational.svg)](https://github.com/wufeng0105/zcode-rules-plugin/releases)
 
 ## 它解决什么问题
 
@@ -42,7 +42,7 @@ ZCode 里有两件互不相干的事，都需要你配置。
 node <CLI> plugins marketplace add wufeng0105/zcode-rules-plugin
 
 # ② 安装
-#    期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.2) [enabled]
+#    期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.3) [enabled]
 node <CLI> plugins install zcode-rules@zcode-rules-plugin
 
 # ③ 确认宿主已加载 hook 与 MCP
@@ -125,6 +125,18 @@ node <CLI> plugins install zcode-rules@zcode-rules-plugin
 
 保存后投影进 `AGENTS.md` 的 `zcode-content-policy` 段。**对新会话生效**——`AGENTS.md` 是会话开始时的上下文，当前会话已加载的文字不会因此改变。
 
+### 只想让模型看到内容策略，不想让它看到规则清单
+
+有些规则（比如「哪些命令免弹窗」「哪些操作拦住」）是给机器执行的，不必出现在给模型读的 `AGENTS.md` 里。关掉「投影规则段」后：
+
+- 导出时**只投影内容策略段**，并摘除已有的规则段；
+- **hook 判定完全不受影响**——它读的是 `rules.json`，不是 `AGENTS.md`；
+- 面板里保存规则/策略也不会再把规则段写回来（模式是持久的）。
+
+怎么关：**插件详情页 → 配置 → 关掉「投影规则段」→ 重启 ZCode**（MCP server 启动时读取该配置）。生效后可在面板「自检与版本」里看到新增的一行 `projection-mode`，写明当前是开启还是关闭——不靠猜。
+
+> 参数层还有一个一次性的口子：MCP 工具 `export_agents` 传 `projectRules: false` 只影响这一次调用，不改配置。
+
 ## 规则写了却像没生效？三个最常见原因
 
 排查顺序从最常见的开始。
@@ -151,7 +163,7 @@ node <CLI> plugins install zcode-rules@zcode-rules-plugin
 
 | 检查 | 结果 |
 | --- | --- |
-| 单元测试 | **189 例全过**，三平台（ubuntu / macos / windows）各跑一遍 |
+| 单元测试 | **197 例全过**，三平台（ubuntu / macos / windows）各跑一遍 |
 | 参照实现保真 | 4 个文件逐字节校验 sha256，且「副本 ≡ 原件」 |
 | 文档引用 | 全部相对链接与仓库内路径存在 |
 | 依赖 | 零。CI 里没有 `npm install` 这一步 |
@@ -210,9 +222,9 @@ node <CLI> plugins validate <repo>
 #    { "name": "my-market",
 #      "plugins": [{ "name": "zcode-rules",
 #                    "source": { "source": "directory", "path": "C:/path/to/zcode-rules-plugin" },
-#                    "version": "0.4.2" }] }
+#                    "version": "0.4.3" }] }
 
-# ③ 加入并安装 → 期望：Installed plugin zcode-rules@my-market (0.4.2) [enabled]
+# ③ 加入并安装 → 期望：Installed plugin zcode-rules@my-market (0.4.3) [enabled]
 node <CLI> plugins marketplace add ~/zcode-market
 node <CLI> plugins install zcode-rules@my-market
 ```

@@ -75,7 +75,7 @@ scripts/
   probe-selfcheck.mjs     # 自检探针：打印每项 level/id/message
   proof/                  # 四份判据驱动（路径全环境变量化）
   tools-list-probe.mjs    # stdio MCP server 的可靠探针
-tests/                    # 189 例，零依赖
+tests/                    # 197 例，零依赖
 docs/                     # VERIFICATION / DOD / REPRODUCE / DEVELOPMENT / selfcheck / isolation
 FIDELITY.json             # 4 个参照实现的 sha256 基线
 .github/workflows/ci.yml  # CI：三平台 × 三步
@@ -110,6 +110,25 @@ FIDELITY.json             # 4 个参照实现的 sha256 基线
 
 **所以判断恢复成功要看三条**：语义等价 + 规则集为空 + `AGENTS.md` 投影字节相等。用字节相等去比 `rules.json` 会一直失败。
 
+### 投影模式归产品配置，不是插件状态（v0.4.3）
+
+「规则段要不要投影进 `AGENTS.md`」是**用户设置**，所以它不落在插件数据目录里，而是走产品自己的配置通道：
+
+```
+manifest.userConfig.projectRules      # 声明（产品详情页「配置」里的原生布尔开关）
+  → config.json 的 plugins.options["<pluginId>"]
+  → 产品按 manifest 的 ${user_config.projectRules} 注入 MCP server 的 env
+  → src/mcp/server.mjs 的 resolveProjectRules() 解析成 boolean
+  → 作为显式参数传给 exportAgents() / runSelfcheck()
+```
+
+两条纪律（改这块时别破坏）：
+
+- **纯函数不读配置**：`operations.mjs` 的 `exportAgents` / `runSelfcheck` 只吃显式参数；env/配置解析只发生在 `server.mjs` 这一层。
+- **插件不自建第二份状态**：不要在数据目录造 `projection.json` 之类的文件——那会和产品配置打架（谁是权威说不清）。
+
+默认值是 `true`：不配置时行为与 0.4.2 完全一致；只有注入值明确为 `false` 才关闭（旧版产品不展开 `${user_config.*}` 时会把模板原样传下来，同样退化成 `true`，属安全侧）。
+
 ## 五、MCP 数据面
 
 六个工具，面板上每个按钮最终都落到其中一个：
@@ -118,7 +137,7 @@ FIDELITY.json             # 4 个参照实现的 sha256 基线
 | --- | --- |
 | `rules_read` / `rules_write` | 读 / 写规则源（写会规范化） |
 | `content_policy_read` / `content_policy_write` | 读 / 写内容策略 |
-| `export_agents` | 把两段投影进 `AGENTS.md`。`projectRules:false` 时只投影策略段并摘除规则段（v0.4.2）。**策略段只能由它投影**——CLI 脚本只管规则段 |
+| `export_agents` | 把两段投影进 `AGENTS.md`。`projectRules:false` 时只投影策略段并摘除规则段；不传时用产品配置 `userConfig.projectRules`（v0.4.3），显式传参只覆盖本次调用。**策略段只能由它投影**——CLI 脚本只管规则段 |
 | `selfcheck_run` | 九项自检，只读 |
 
 **数据目录缺失时全部 fail-closed**：不猜路径、不用默认值，直接报错。这是有意的——猜错路径写到别处，比报错更糟。

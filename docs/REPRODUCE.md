@@ -27,7 +27,7 @@ node --version          # 需要 v24
 ```pwsh
 node scripts/verify-fidelity.mjs    # 4 个参照实现逐字节 + 副本 ≡ 原件
 node scripts/check-docs.mjs         # 文档相对链接与仓库内路径
-node --test tests/                  # 189 例
+node --test tests/                  # 197 例
 ```
 
 期望三条都 exit 0。这是 CI 跑的三步，也是最容易复跑的部分。
@@ -47,7 +47,7 @@ node <CLI> plugins marketplace add wufeng0105/zcode-rules-plugin
 # 期望：Added marketplace zcode-rules-plugin (N plugins)
 
 node <CLI> plugins install zcode-rules@zcode-rules-plugin
-# 期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.2) [enabled]
+# 期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.3) [enabled]
 
 node <CLI> plugins list --verbose
 # 期望：出现 hooks: 1 与 mcp: plugin:zcode-rules:zcode-rules

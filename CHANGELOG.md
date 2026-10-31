@@ -1,3 +1,16 @@
+## 0.4.3（2026-10-31）
+
+**「投影规则段」变成一个持久开关**：关掉后 `AGENTS.md` 只保留内容策略段，规则清单不再写给模型看——hook 拦截照旧。
+
+- **为什么**：0.4.2 只给了 MCP 工具一个一次性参数 `projectRules`，但面板「保存」内部固定调 `export_agents` 不带参数（默认 true），所以只要在面板点一次保存，规则段就被写回来。用户要的是「设一次就一直不投影」。
+- **设计（关键）**：这个开关**没有**落到插件数据目录，而是走产品自己的配置通道——`manifest.userConfig.projectRules`（产品详情页「配置」里的原生布尔开关）→ 产品存 `config.json` 的 `plugins.options["<pluginId>"]` → 按 manifest 的 `${user_config.projectRules}` 注入 MCP server env → `server.mjs` 解析成 boolean → 作为**显式参数**传给 `exportAgents()` / `runSelfcheck()`。插件不新建状态文件，纯函数仍不读 env/配置。
+- **行为**：关掉后，任何导出（面板保存也算）只投影内容策略段，并摘除已有规则段；hook 判定读 `rules.json`，完全不受影响。MCP 工具显式传 `projectRules` 仍可**一次性**覆盖，不改配置、不落盘。
+- **自检**：新增 `projection-mode`（info，报当前模式）；规则段缺失时的口径分流——配置关闭时是 `info`（预期态），配置开启时仍是 `warn`（"该投影却没导出"的信号不丢）。两者都带 `absent: true`，面板不会误报成手改。
+- **兼容**：默认值 `true`，不配置时行为与 0.4.2 逐字节一致；显式参数语义不变。旧版产品若不展开 `${user_config.*}`，模板会原样传入，解析退化成 `true`（安全侧）。
+- **证据（产品侧）**：已安装的 CLI 产物 `zcode.cjs` 内含 `if(name.startsWith("user_config.")){...}` 展开逻辑；MCP server 的 `env` 经 `resolveStringRecord → resolveTemplate` 展开。
+- 版本号 `0.4.3`：`package.json`、`.zcode-plugin/plugin.json`、`marketplace.json`（version ×2 + `source.ref`）、面板字样（`panel-version` / `PANEL_VERSION`）同步。
+- 测试：新增 `tests/projection-mode.test.mjs`（8 例：manifest 声明与 env 接线、env 解析边界、MCP 缺省走配置、显式参数覆盖、自检口径分流）；`node --test tests/` 共 **197 例全绿**（原 189 + 8）。
+
 ## 0.4.2（2026-10-31）
 
 **新增 `export_agents` 的 `projectRules` 开关（v0.4.2）**：只想让 `AGENTS.md` 带上内容策略、不想让规则表继续注入模型上下文时，可以不投影规则段。

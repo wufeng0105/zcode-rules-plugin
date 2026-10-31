@@ -168,11 +168,31 @@ export function readServerVersion() {
   return typeof pkg?.version === "string" && pkg.version.trim() !== "" ? pkg.version.trim() : "0.0.0";
 }
 
-/** 运行期上下文：数据目录 + 版本号。数据目录缺失时 dataDir=null（工具调用 fail-closed）。 */
+/**
+ * 投影模式（v0.4.3）：规则段要不要投影进 AGENTS.md。
+ *
+ * 值来自**产品自己的配置通道**，插件不自建状态：
+ *   manifest.userConfig.projectRules（详情页「配置」里的原生开关）
+ *     → 产品存 `config.json` 的 `plugins.options["<pluginId>"]`
+ *     → 产品按 manifest 的 `${user_config.projectRules}` 注入本进程 env。
+ * 两者都不在插件侧解析，这里只读最终结果。
+ *
+ * 缺省 `true`（与 0.4.2 完全一致）；只有注入值明确为 `false`（大小写/空白容忍）才关闭。
+ * 从这里往下都走**显式参数**（exportAgents / runSelfcheck 仍是纯函数入参），
+ * 配置解析只发生在这一层。
+ */
+export function resolveProjectRules(env = process.env) {
+  const raw = env.ZCODE_RULES_PROJECT_RULES;
+  if (typeof raw !== "string") return true;
+  return raw.trim().toLowerCase() !== "false";
+}
+
+/** 运行期上下文：数据目录 + 版本号 + 投影模式。数据目录缺失时 dataDir=null（工具调用 fail-closed）。 */
 export function createContext(env = process.env) {
   return {
     dataDir: firstNonEmpty(env.ZCODE_RULES_DATA, env.ZCODE_PLUGIN_DATA),
     version: readServerVersion(),
+    projectRules: resolveProjectRules(env),
   };
 }
 
@@ -245,9 +265,10 @@ async function callTool(name, args, context) {
       return { data: result, isError: !result.ok };
     }
     case "export_agents": {
-      // T68：projectRules===false 表示「本次不投影规则段」。此时不读、不要求 rules.json ——
+      // 投影模式：显式参数优先（一次性覆盖），否则用产品 userConfig 注入的持久设置（v0.4.3）。
+      // projectRules===false 表示「本次不投影规则段」：此时不读、不要求 rules.json ——
       // 它仍然被 hook 直接读取，与本工具无关；再要求一份规则文件属于自相矛盾的摩擦。
-      const projectRules = args.projectRules;
+      const projectRules = args.projectRules === undefined ? context.projectRules : args.projectRules;
       let rules = args.rules;
       if (projectRules !== false && rules === undefined) {
         const loaded = loadRules(paths.rulesPath);
@@ -277,8 +298,8 @@ async function callTool(name, args, context) {
       const result = exportAgents({
         agentsPath,
         policy,
+        projectRules,
         rules,
-        ...(projectRules === undefined ? {} : { projectRules }),
       });
       return { data: result, isError: !result.ok };
     }
@@ -291,7 +312,12 @@ async function callTool(name, args, context) {
         typeof args.configPath === "string" && args.configPath.trim() !== ""
           ? args.configPath
           : undefined;
-      const result = runSelfcheck({ agentsPath, configPath, dataDir: context.dataDir });
+      const result = runSelfcheck({
+        agentsPath,
+        configPath,
+        dataDir: context.dataDir,
+        projectRules: context.projectRules,
+      });
       return { data: result, isError: !result.ok };
     }
     default:
@@ -490,6 +516,7 @@ export async function main() {
   const context = createContext();
   process.stderr.write(
     `[${SERVER_NAME}] mcp stdio ready · version=${context.version} · ` +
+      `projectRules=${context.projectRules}（来自 userConfig）· ` +
       `dataDir=${context.dataDir ?? "<未配置，工具调用将 fail-closed>"}\n`,
   );
   const rl = createInterface({ crlfDelay: Infinity, input: process.stdin });

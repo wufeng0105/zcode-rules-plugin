@@ -1,6 +1,6 @@
 {
   "name": "zcode-rules-plugin",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "让 ZCode 按你的规则工作：一份规则源，两个出口 —— PermissionRequest hook 判定（allow/deny/abstain）+ AGENTS.md 哨兵段投影",
   "owner": {
     "name": "wufeng0105",
@@ -12,10 +12,10 @@
       "source": {
         "source": "github",
         "repo": "wufeng0105/zcode-rules-plugin",
-        "ref": "v0.4.2",
+        "ref": "v0.4.3",
         "path": ""
       },
-      "version": "0.4.2",
+      "version": "0.4.3",
       "description": "一份规则源，两个出口：PermissionRequest hook 判定 + AGENTS.md 哨兵段投影。空规则 + 空策略 = 零行为变化。",
       "author": {
         "name": "wufeng0105"

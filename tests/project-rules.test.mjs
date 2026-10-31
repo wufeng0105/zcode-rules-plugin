@@ -202,7 +202,7 @@ test("CRLF 文档：摘段后仍保持 CRLF，且不出现裸 LF", () => {
   assert.ok(!/(^|[^\r])\n/.test(text), "CRLF 文档里不应出现裸 LF");
 });
 
-test("projectRules:false 后自检：rules-section 为 warn 且 absent=true，policy-section 为 ok，整体仍 ok", () => {
+test("自检口径：默认（开着）缺段是 warn；显式 projectRules:false 时是 info，policy-section 均为 ok", () => {
   const dir = tempDir();
   const paths = resolveDataPaths(dir);
   const agentsPath = join(dir, "AGENTS.md");
@@ -210,14 +210,28 @@ test("projectRules:false 后自检：rules-section 为 warn 且 absent=true，po
   assert.equal(savePolicy(paths.policyPath, POLICY).ok, true);
   assert.equal(exportAgents({ agentsPath, policy: POLICY, projectRules: false }).ok, true);
 
-  const result = runSelfcheck({ agentsPath, configPath: join(dir, "config.json"), dataDir: dir });
-  assert.equal(result.ok, true, "缺规则段只是 warn，不得变成 error");
-  const levels = Object.fromEntries(result.checks.map((check) => [check.id, check]));
-  assert.equal(levels["rules-section"].level, "warn");
-  assert.equal(levels["rules-section"].absent, true, "干净缺失必须带 absent 标记（面板据此不弹手改横幅）");
-  assert.match(levels["rules-section"].message, /projectRules:false/);
-  assert.equal(levels["policy-section"].level, "ok");
-  assert.equal(result.summary.errors, 0);
+  // 默认（projectRules=true，即 0.4.2 的既有语义）：缺段仍是 warn —— 信号不能丢
+  const withRulesMode = runSelfcheck({ agentsPath, configPath: join(dir, "config.json"), dataDir: dir });
+  assert.equal(withRulesMode.ok, true, "缺规则段只是 warn，不得变成 error");
+  const warn = Object.fromEntries(withRulesMode.checks.map((check) => [check.id, check]));
+  assert.equal(warn["rules-section"].level, "warn");
+  assert.equal(warn["rules-section"].absent, true, "干净缺失必须带 absent 标记（面板据此不弹手改横幅）");
+  assert.equal(warn["policy-section"].level, "ok");
+  assert.equal(withRulesMode.summary.errors, 0);
+
+  // v0.4.3：配置里关掉投影时，缺段是预期态 → info，不吓人
+  const offMode = runSelfcheck({
+    agentsPath,
+    configPath: join(dir, "config.json"),
+    dataDir: dir,
+    projectRules: false,
+  });
+  const info = Object.fromEntries(offMode.checks.map((check) => [check.id, check]));
+  assert.equal(info["rules-section"].level, "info");
+  assert.equal(info["rules-section"].absent, true);
+  assert.match(info["rules-section"].message, /按配置关闭/);
+  assert.equal(info["policy-section"].level, "ok");
+  assert.equal(offMode.summary.projectRules, false);
 });
 
 test("projectRules:false + CJK 多行策略：正文逐字写入且顺序不变", () => {

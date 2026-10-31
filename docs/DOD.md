@@ -18,7 +18,7 @@
 | **D-6** | 卸载后三处注册清净 + `AGENTS.md` 的 sha 不变 | ✅ | 三处清净：cache 下文件数 0、`installed_plugins.json` 无该 id、`enabledPlugins` 无该 id；`export-agents --uninstall` 逐字节回到装前。**注意**：产品卸载本身不摘段——见口径说明 ③ |
 | **D-7** | 换版本重装真源保留、投影幂等；升级后自检三态可判 | ✅ | v0.4.0 → v0.4.1 真实升级（带实质代码变更：新增第九项自检 `data-dir`）。真源字节不变、`AGENTS.md` 重投影 sha 不变、产物逐文件摘要一致、hook 仍工作。三态（`ok` / `warn` / `error`）各自可触发且可区分 |
 | **D-8** | 全程 `C:\Program Files\ZCode` 的文件 mtime 不变 | ✅ | 1433 个文件逐个记录「相对路径 + size + mtimeMs」并聚合，升级前后完全一致 |
-| **D-9** | 公开仓库含 LICENSE / README / CHANGELOG / tag，CI 绿 | ✅ | 仓库 PUBLIC / MIT / main 分支 / 7 个 tag；CI 三平台矩阵（ubuntu + macos + windows，各 Node 24），每平台三步都 exit 0 |
+| **D-9** | 公开仓库含 LICENSE / README / CHANGELOG / tag，CI 绿 | ✅ | 仓库 PUBLIC / MIT / main 分支 / 8 个 tag；CI 三平台矩阵（ubuntu + macos + windows，各 Node 24），每平台三步都 exit 0 |
 | **D-10** | 所有证据日志的复跑命令指向仓库内文件，第三方可复现 | ✅ | 历史门禁日志原样保留（改历史等于伪造证据）。改为在本仓库提供复跑入口：`REPRODUCE.md` 逐条映射 + `../scripts/proof/` 四份路径全环境变量化的驱动 + `../scripts/tools-list-probe.mjs`。**注意**：历史日志里的本机路径是历史事实——见口径说明 ④ |
 
 ## 四条口径说明

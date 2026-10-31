@@ -398,7 +398,10 @@ function inspectManualPermissionHooks(configPath) {
  *        AGENTS.md 尺寸 >90KiB 预警、版本号、config 无手工接线（R1）。
  * 返回 `{ ok, checks, summary }`；ok 只由 error 级检查决定（warn/info 不阻断）。
  */
-export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
+export function runSelfcheck({ agentsPath, dataDir, configPath, projectRules = true } = {}) {
+  // projectRules（v0.4.3）：由 server.mjs 从产品 userConfig 解析后**显式传入**（本函数仍是纯函数，
+  // 不读 env、不读文件配置）。false = 规则段按配置不投影，此时「AGENTS.md 里没有规则段」是预期态。
+  const projectRuleSection = projectRules !== false;
   const checks = [];
   const add = (id, level, message, detail, extra) => {
     checks.push({
@@ -451,6 +454,17 @@ export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
       paths.dataDir,
     );
   }
+
+  // 0.5) 投影模式（v0.4.3 新增）
+  // 值来自产品 userConfig（manifest「投影规则段」开关）→ 本进程 env；这里只如实报当前生效值，
+  // 让用户不必猜「为什么 AGENTS.md 里没有规则段」。info 级，永不阻断。
+  add(
+    "projection-mode",
+    "info",
+    projectRuleSection
+      ? "规则段投影：开启（projectRules=true）——AGENTS.md 会同时投影规则段与内容策略段"
+      : "规则段投影：关闭（projectRules=false，来自插件配置「投影规则段」）——只投影内容策略段，规则仍由 hook 执行",
+  );
 
   // 1) 规则
   const rulesLoaded = loadRules(paths.rulesPath);
@@ -525,18 +539,29 @@ export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
     if (rulesLoaded.ok && rulesLoaded.exists) {
       const snapshot = sectionSnapshot(agentsText, SECTION_NAMES.RULES);
       if (!snapshot.present) {
-        // T68：缺规则段可能是 export_agents 的 projectRules:false 有意为之（v0.4.2 新增）。
-        // 自检无法从磁盘区分"有意不投影"与"还没导出"，故保留 warn，并给出 absent 标记
-        // 让面板不再把它当成"被手改"。hook 判定读 rules.json，不受投影开关影响。
-        add(
-          "rules-section",
-          "warn",
-          snapshot.malformed
-            ? `zcode-rules 段哨兵结构异常：${snapshot.reason}`
-            : "AGENTS.md 里没有 zcode-rules 段（可能是 projectRules:false 的有意选择，或尚未导出；hook 判定不受影响）",
-          undefined,
-          snapshot.malformed ? {} : { absent: true },
-        );
+        // 缺规则段有两种可能，自检必须分开报（v0.4.3）：
+        //   · 配置里关掉了规则段投影 → 这是**预期态**，info；
+        //   · 开着却没导出 / 段被删 → 值得提醒，warn。
+        // 两种情况都带 absent 标记，面板据此不把它当成"被手改"。
+        if (!snapshot.malformed && !projectRuleSection) {
+          add(
+            "rules-section",
+            "info",
+            "按配置关闭了规则段投影：AGENTS.md 不含 zcode-rules 段（预期；hook 判定不受影响）",
+            undefined,
+            { absent: true },
+          );
+        } else {
+          add(
+            "rules-section",
+            "warn",
+            snapshot.malformed
+              ? `zcode-rules 段哨兵结构异常：${snapshot.reason}`
+              : "AGENTS.md 里没有 zcode-rules 段（可能是还没导出；若想只投影内容策略，去插件配置关掉「投影规则段」）",
+            undefined,
+            snapshot.malformed ? {} : { absent: true },
+          );
+        }
       } else {
         const actual = agentsText.slice(snapshot.begin, snapshot.end);
         const expected = renderAgentsSection(rulesLoaded.rules);
@@ -650,6 +675,7 @@ export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
       dataDir: paths.dataDir,
       errors,
       policyBytes: policyLoaded.ok ? Buffer.byteLength(policyLoaded.text, "utf8") : 0,
+      projectRules: projectRuleSection,
       rulesCount,
       rulesSchemaVersion: RULE_SCHEMA_VERSION,
       version,

@@ -1,6 +1,6 @@
 {
   "name": "zcode-rules",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "license": "MIT",
   "description": "ZCode 规则插件：一份规则源、两个出口（权限 hook 判定 + AGENTS.md 双哨兵投影）。One rules source, two exits: a PermissionRequest hook and dual-sentinel AGENTS.md projection.",
   "hooks": {
@@ -24,7 +24,8 @@
       ],
       "env": {
         "ZCODE_RULES_DATA": "${ZCODE_PLUGIN_DATA}",
-        "ZCODE_RULES_ROOT": "${ZCODE_PLUGIN_ROOT}"
+        "ZCODE_RULES_ROOT": "${ZCODE_PLUGIN_ROOT}",
+        "ZCODE_RULES_PROJECT_RULES": "${user_config.projectRules}"
       }
     }
   },
@@ -47,6 +48,12 @@
       "type": "boolean",
       "title": "启用规则",
       "description": "关闭后不注入规则（等价空规则，产品原行为）。规则内容与内容策略在**侧边面板**里编辑：会话内按 Ctrl+Alt+B → 插件市场 → ZCode Rules 卡片右上「打开」。",
+      "default": true
+    },
+    "projectRules": {
+      "type": "boolean",
+      "title": "投影规则段",
+      "description": "关闭后，导出 AGENTS.md 时**只投影内容策略段**，并摘除已有的规则段（规则仍由 PermissionRequest hook 执行，拦截不受影响）。适合「只想让模型看到内容策略、不想看到规则清单」的用法。**改动需重启 ZCode 生效**（MCP server 在启动时读取该配置）。",
       "default": true
     },
     "watchdogSeconds": {

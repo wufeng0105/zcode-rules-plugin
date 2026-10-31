@@ -33,7 +33,7 @@ const REAL_HOME = process.env.ZCODE_REAL_HOME || "C:\\Users\\Administrator";
 const MARKET = "t68-market";
 const PLUGIN_NAME = "zcode-rules";
 const PLUGIN_ID = `${PLUGIN_NAME}@${MARKET}`;
-const EXPECTED_VERSION = "0.4.2";
+const EXPECTED_VERSION = "0.4.3";
 const ISO_SEGMENT = join(".zhll", "rt", "iso-runs");
 const STAMP = new Date().toISOString();
 
@@ -286,7 +286,27 @@ check(
   "装后缓存里有 MCP server",
   installedRoot || "<未安装>",
 );
-const list = runCli(["plugins", "list", "--verbose"], "plugins-list");
+// ① 产品侧接线证据：把「投影规则段」写进隔离 home 的 config.json（产品真实存储位置），
+// 再跑 plugins list —— 若产品不支持 ${user_config.*} 展开，这里会报 plugin_variable_missing。
+const configJsonPath = join(cliDir, "config.json");
+const configBefore = readJson(configJsonPath) ?? {};
+const configNext = {
+  ...configBefore,
+  plugins: {
+    ...(configBefore.plugins ?? {}),
+    options: {
+      ...((configBefore.plugins ?? {}).options ?? {}),
+      [PLUGIN_ID]: { projectRules: false },
+    },
+  },
+};
+writeFileSync(configJsonPath, `${JSON.stringify(configNext, null, 2)}\n`, "utf8");
+const list = runCli(["plugins", "list", "--verbose"], "plugins-list-with-userconfig");
+check(
+  !/Missing plugin user_config value/.test(`${list.stdout}${list.stderr}`),
+  "产品能解析 ${user_config.projectRules}（无 plugin_variable_missing）",
+  list.exit === 0 ? "exit=0" : `exit=${list.exit}`,
+);
 // 该命令的形态（实测）：清单行 `- <id> [enabled]`，下一行是
 // `official/<market>: <installPath>`，再下一行是 `skills: … hooks: … mcp: …`。
 const listLines = list.stdout.split(/\r?\n/u);
@@ -423,6 +443,7 @@ check(afterDefault.includes("allow-git-readonly") && afterDefault.includes("deny
 check(afterDefault.includes("<!-- BEGIN zcode-content-policy"), "缺省导出后策略段仍在");
 
 // 6) 再切回 projectRules:false → 已有规则段被**摘除**
+
 const third = await session.callTool("export_agents", { agentsPath, projectRules: false });
 const thirdData = JSON.parse(third?.result?.content?.[0]?.text ?? "{}");
 check(
@@ -435,6 +456,28 @@ const afterRemoval = readFileSync(agentsPath, "utf8");
 check(!afterRemoval.includes("<!-- BEGIN zcode-rules"), "摘除后 AGENTS.md 无规则段");
 check(afterRemoval.startsWith(USER_PREFIX), "摘除后段外用户内容仍逐字保留");
 check(!afterRemoval.includes("allow-git-readonly"), "摘除后不残留任何规则 id");
+
+// ② v0.4.3：模拟产品注入 env（config.json plugins.options → ${user_config.projectRules}），
+// 调 export_agents **不传** projectRules —— 预期按配置关闭。
+const offSession = startSession(serverPath, {
+  ZCODE_RULES_DATA: dataDir,
+  ZCODE_RULES_PROJECT_RULES: "false",
+  ZCODE_RULES_ROOT: installedRoot,
+});
+await offSession.request("initialize", { capabilities: {}, clientInfo: { name: "t68-proof-off", version: "0.1" }, protocolVersion: "2024-11-05" });
+const fromConfig = await offSession.callTool("export_agents", { agentsPath });
+const fromConfigData = JSON.parse(fromConfig?.result?.content?.[0]?.text ?? "{}");
+check(fromConfigData.ok === true && fromConfigData.projectRules === false, "不传参数时按配置关闭（projectRules=false）", `projectRules=${fromConfigData.projectRules}`);
+check(
+  !readFileSync(agentsPath, "utf8").includes("<!-- BEGIN zcode-rules"),
+  "按配置关闭后 AGENTS.md 无规则段",
+);
+const modeCheck = await offSession.callTool("selfcheck_run", { agentsPath, configPath: join(cliDir, "config.json") });
+const modeData = JSON.parse(modeCheck?.result?.content?.[0]?.text ?? "{}");
+const modeById = Object.fromEntries((modeData.checks ?? []).map((item) => [item.id, item]));
+check(modeById["projection-mode"]?.level === "info" && /关闭/.test(modeById["projection-mode"]?.message ?? ""), "自检 projection-mode=关闭（info）");
+check(modeById["rules-section"]?.level === "info" && modeById["rules-section"]?.absent === true, "自检 rules-section=info 且 absent=true（预期态，不报 warn）");
+offSession.close();
 
 // 7) 自检：规则段缺失是 warn + absent，不阻断
 const selfcheck = await session.callTool("selfcheck_run", { agentsPath, configPath: join(cliDir, "config.json") });

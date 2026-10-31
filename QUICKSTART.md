@@ -17,7 +17,7 @@ node <CLI> plugins marketplace add wufeng0105/zcode-rules-plugin
 
 # ② 安装
 node <CLI> plugins install zcode-rules@zcode-rules-plugin
-#    期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.2) [enabled]
+#    期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.3) [enabled]
 
 # ③ 确认 hook 与 MCP 都挂上了
 node <CLI> plugins list --verbose
@@ -127,6 +127,10 @@ ZCode 对一批**只读命令**不询问——直接放行，不弹窗。`ls`、
 - 「用真源覆盖 `AGENTS.md`」——以规则源为准
 - 「从 `AGENTS.md` 回填真源」——以你手改的内容为准
 
+### 不想让 `AGENTS.md` 里出现规则清单
+
+插件详情页 → **配置** → 关掉「**投影规则段**」→ **重启 ZCode**。之后导出只写内容策略段，规则段会被摘掉；hook 拦截照旧（它读 `rules.json`）。生效证据：面板「自检与版本」里 `projection-mode` 一行会写「规则段投影：关闭」。
+
 ### 升级后旧面板标签报 `ENOENT`
 
 关掉那个标签重新打开，或者重启 ZCode。原因是资源路径里带了版本号，旧标签还指着旧路径。
@@ -165,7 +169,7 @@ node <CLI> plugins uninstall zcode-rules@zcode-rules-plugin --force
 ```pwsh
 node scripts/verify-fidelity.mjs   # 4 个参照实现逐字节保真（含副本 ≡ 原件）
 node scripts/check-docs.mjs        # 文档相对链接与仓库内路径检查
-node --test tests/                 # 189 例，零依赖、离线可跑
+node --test tests/                 # 197 例，零依赖、离线可跑
 ```
 
 三条都不需要 `npm install`。CI 跑的就是这三步，三平台（ubuntu / macos / windows）各一遍。
