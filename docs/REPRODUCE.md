@@ -85,9 +85,25 @@ ZCode 自带**只读命令白名单** —— 这些命令走**免询问**路径�
 | `which <cmd>` | ❌ 不介入 |
 | `head -1 <file>` | ❌ 不介入 |
 
-**产品只读白名单（源码实测，46 个命令）**：
-`basename cal cat cmp column comm cut df diff dirname du expand expr false fmt fold free groups head hexdump id locale nl nproc numfmt od paste pr readlink realpath rev seq sleep stat strings tac tail tr true tsort type uname unexpand uptime wc which`
+**产品只读白名单（源码实测，去重后 74 个）**：
+
+来源：`apps/zcode-cli/packages/core/src/tool/handlers/bash-readonly-policy-simple-commands.ts`。由两个集合合并：
+
+- `READONLY_ALLOW_ANY_ARG_COMMANDS`（**46 个**，任意参数均只读）
+- `READONLY_COMMAND_POLICIES`（**49 个**，按 safeFlags 判定）
+- 两者重叠 21 个，**并集 74 个**
+
+```
+alias base64 basename cal cat cd cmp column comm cut df diff dirname du echo egrep expand expr
+false fd fdfind fgrep file find fmt fold free grep groups head help hexdump id jq locale ls
+md5sum netstat nl nproc numfmt od paste pgrep pr printf ps pwd readlink realpath rev rg seq
+sha1sum sha256sum sleep sort ss stat strings tac tail tr tree true tsort type uname unexpand
+uniq uptime wc which whoami
+```
+
 另有 `docker images` / `docker ps` 两个前缀形态，以及 git / gh 的多词只读子命令集。
+
+> ⚠️ 此前本文件与 README 都写「46 个」，实为只数了第一个集合：`ls`、`echo`、`grep`、`find`、`rg`、`jq` 等常用命令在第二个集合里，**不在那 46 项中**。已更正为 74，并给出两个集合的构成。
 
 > 早期版本的本文件曾写「带重定向的命令 hook 不触发」—— **该结论是错的**，已由上表实测推翻。真实机制是「只读白名单免询问」，与重定向无关。
 >

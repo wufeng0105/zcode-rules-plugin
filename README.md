@@ -18,30 +18,23 @@
 
 ```pwsh
 # <CLI> = ZCode 安装目录里的 CLI 入口（Windows 默认 C:\Program Files\ZCode\resources\glm\zcode.cjs）
-# <repo> = 本仓库路径
 
-# ① 校验清单 → 期望：Plugin manifest is valid: <repo>
-node <CLI> plugins validate <repo>
+# ① 添加本仓库为市场源（从 GitHub 直读，一次即可）
+#    → 期望：Added marketplace zcode-rules-plugin (N plugins)
+node <CLI> plugins marketplace add wufeng0105/zcode-rules-plugin
 
-# ② 建一个市场源（一次即可），写 ~/zcode-market/marketplace.json：
-#    注意 path 用**正斜杠**（Windows 下反斜杠在 JSON 里必须转义，容易写错）：
-#    { "name": "my-market",
-#      "plugins": [{ "name": "zcode-rules",
-#                    "source": { "source": "directory", "path": "C:/path/to/zcode-rules-plugin" },
-#                    "version": "0.4.1" }] }
+# ② 安装 → 期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.1) [enabled]
+node <CLI> plugins install zcode-rules@zcode-rules-plugin
 
-# ③ 加入市场源并安装 → 期望：Installed plugin zcode-rules@my-market (0.4.1) [enabled]
-node <CLI> plugins marketplace add ~/zcode-market
-node <CLI> plugins install zcode-rules@my-market
-
-# ④ 确认宿主已加载 hook 与 MCP
-#    → 期望：zcode-rules@my-market … hooks: 1, mcp: plugin:zcode-rules:zcode-rules
+# ③ 确认宿主已加载 hook 与 MCP
+#    → 期望：zcode-rules@zcode-rules-plugin … hooks: 1, mcp: plugin:zcode-rules:zcode-rules
 node <CLI> plugins list --verbose
 ```
-
 装好后打开面板：**会话内按 `Ctrl`+`Alt`+`B`** → 侧栏「插件市场」→ **ZCode Rules** 卡片右上角「**打开**」。
 
 ## 能做什么
+
+**升级**：`plugins install zcode-rules@zcode-rules-plugin` 即可原地升级（**不要先 uninstall** —— 卸载会删掉你的规则与策略）。
 
 > 面板在哪：会话内 `Ctrl`+`Alt`+`B` → 侧栏「插件市场」→ **ZCode Rules** 卡片右上角「**打开**」。详情页的「立即试用」**不会**打开面板（它只把示例提示词预填进新会话）；详情页「配置」只有 `启用规则` 与 `看门狗秒数` 两个原生控件 —— 规则表和内容策略输入框都在面板里。
 
@@ -53,9 +46,33 @@ node <CLI> plugins list --verbose
 
 ### 规则写了却像没生效？三个最常见原因
 
-1. **命令本来就不会被询问** —— ZCode 自带只读命令白名单（`cat` `ls` `head` `wc` `which` `echo` `git status` 等 46 个），走免询问路径，hook 没有参与机会。测规则请用确实会被询问的命令（`touch`、`rm`、`npm --version`、`git -C <dir> status`）。完整对照见 [docs/REPRODUCE.md](docs/REPRODUCE.md) §三。
+1. **命令本来就不会被询问** —— ZCode 自带只读命令白名单（**74 个**：46 个任意参数命令 + 49 个按 flag 判定的策略命令，去重后 74），走免询问路径，hook 没有参与机会。常见的 `ls` `cat` `echo` `grep` `find` `rg` `jq` `head` `tail` `wc` `sort` `uniq` `ps` `pwd` `whoami` 都在名单里 —— **这些命令不需要写规则**。测规则请用确实会被询问的命令（`touch`、`rm`、`npm --version`、`git -C <dir> status`）。完整清单见 [docs/REPRODUCE.md](docs/REPRODUCE.md) §三。
 2. **正则转义写错** —— `commandPattern` 是**正则**。JSON 里写 `"\\."` 落盘是 `\.`（匹配字面点号，正确）；写 `"\\\\."` 落盘是 `\\.`（匹配字面反斜杠）⇒ 永不命中。在面板里直接写 `\.` 即可，不必操心 JSON 转义。
 3. **锚点与实际命令不匹配** —— 实际命令形态可能是 `touch "C:/path/x.probe-file"`（带引号）。`^touch$` 匹配不上；用 `touch .*probe-file` 这类宽松写法。
+
+### 备选：从本地目录装（不看 GitHub）
+
+<details>
+<summary>不想从 GitHub 装？用本地目录（<code>git clone</code> 后）</summary>
+
+```pwsh
+# ① 校验本地副本 → 期望：Plugin manifest is valid: <repo>
+node <CLI> plugins validate <repo>
+
+# ② 建本地市场源 ~/zcode-market/marketplace.json
+#    注意 path 用正斜杠（Windows 下反斜杠在 JSON 里必须转义，容易写错）：
+#    { "name": "my-market",
+#      "plugins": [{ "name": "zcode-rules",
+#                    "source": { "source": "directory", "path": "C:/path/to/zcode-rules-plugin" },
+#                    "version": "0.4.1" }] }
+
+# ③ 加入并安装 → 期望：Installed plugin zcode-rules@my-market (0.4.1) [enabled]
+node <CLI> plugins marketplace add ~/zcode-market
+node <CLI> plugins install zcode-rules@my-market
+```
+
+注意：这样注册的市场类型是 `directory`（本地目录），**不是** GitHub 源。
+</details>
 
 ## 可靠性与证据
 
