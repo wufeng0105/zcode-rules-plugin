@@ -170,3 +170,5 @@ node ../scripts/tools-list-probe.mjs <server.mjs 路径> <dataDir>
 ```
 
 ⚠️ 四个实测坑（脚本头部有完整注释）：请求必须**串行**发；必须显式 `stdio:["pipe","pipe","pipe"]`；不要用 `cmd /c` 重定向（`<`/`>` 会被当普通参数）；不要用 `shell:true` 跑整串（`set` 的值会带上引号）。
+
+这些命令覆盖的判据逐条结论见 [DOD.md](DOD.md)；每条判据的验证方式与未覆盖范围见 [VERIFICATION.md](VERIFICATION.md)。

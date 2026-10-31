@@ -3,22 +3,24 @@
 > 一页纸：装上、写第一条规则、知道面板在哪、卸载干净、遇到坑怎么办。
 > 完整文档见 [README.md](README.md)。
 
-## 1. 装（4 步）
+## 1. 装（3 步）
 
 ```pwsh
 # <CLI> = C:\Program Files\ZCode\resources\glm\zcode.cjs
-# <仓库> = zcode-rules-plugin 的绝对路径
 
-# ① 建市场目录 ~/zcode-market/marketplace.json（内容见 README「1. 准备市场」）
-node <CLI> plugins validate <仓库>              # 期望：Plugin manifest is valid
-node <CLI> plugins marketplace add ~/zcode-market  # 期望：Added marketplace …
-node <CLI> plugins install zcode-rules@my-market   # 期望：Installed … [enabled]
-node <CLI> plugins list --verbose                   # 期望含 hooks: 1 与 mcp: plugin:zcode-rules:zcode-rules
+# ① 添加本仓库为市场源（从 GitHub 直读）
+node <CLI> plugins marketplace add wufeng0105/zcode-rules-plugin  # 期望：Added marketplace zcode-rules-plugin (N plugins)
+# ② 安装
+node <CLI> plugins install zcode-rules@zcode-rules-plugin          # 期望：Installed … (0.4.1) [enabled]
+# ③ 确认
+node <CLI> plugins list --verbose                                   # 期望含 hooks: 1 与 mcp: plugin:zcode-rules:zcode-rules
 ```
+
+装完**重启 ZCode**，面板才会出现。
 
 ## 2. 第一条规则（3 步）
 
-1. 打开会话 → <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>B</kbd> → 「插件市场」→ **ZCode Rules** 卡片右上「打开」
+1. 打开会话 → <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>B</kbd> → 「插件市场」→ **ZCode 规则** 卡片右上「打开」
 2. 「规则表」页 → 编辑 JSON：把 `"rules": []` 改成
    ```json
    "rules": [{ "id": "allow-echo", "tool": "Bash", "commandPattern": "^echo hello$", "decision": "allow" }]
@@ -37,13 +39,13 @@ node <CLI> plugins list --verbose                   # 期望含 hooks: 1 与 mcp
 
 **三个走不通的入口**：「立即试用」（只预填提示词）、「应用插件」推荐区（只列官方插件）、详情页「配置」（只有两项）。
 
-## 4. 卸载干净（2 步）
+## 4. 卸载干净（3 步）
 
 ```pwsh
 # ① 先备份规则与策略（卸载会删数据目录）
-Copy-Item -Recurse "$HOME\.zcode\cli\plugins\data\zcode-rules@my-market" "$HOME\zcode-rules-backup"
+Copy-Item -Recurse "$HOME\.zcode\cli\plugins\data\zcode-rules@zcode-rules-plugin" "$HOME\zcode-rules-backup"
 # ② 卸载
-node <CLI> plugins uninstall zcode-rules@my-market --force
+node <CLI> plugins uninstall zcode-rules@zcode-rules-plugin --force
 # ③ 手工删掉 AGENTS.md 里的两个段（产品卸载不摘段）：
 #    <!-- BEGIN zcode-rules … --> … <!-- END zcode-rules -->
 #    <!-- BEGIN zcode-content-policy … --> … <!-- END zcode-content-policy -->

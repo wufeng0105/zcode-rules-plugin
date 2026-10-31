@@ -10,7 +10,7 @@
 
 - **规则源单一性** —— `rules.json` 是唯一权威，`AGENTS.md` 里的是它的投影，不是第二份配置
 - **hook 判定** —— 命中规则 → allow/deny；未命中 → `abstain`（交回 ZCode 原逻辑，不替你做决定）
-- **哨兵段投影** —— `AGENTS.md` 里只维护 `zcode-rules` 与 `zcode-content-policy` 两个带哨兵标记的段，段外内容不动
+- **哨兵段投影** —— `AGENTS.md` 里只维护 `zcode-rules` 与 `zcode-content-policy` 两个带哨兵段的段，段外内容不动
 
 ## 快速开始
 
@@ -30,13 +30,13 @@ node <CLI> plugins install zcode-rules@zcode-rules-plugin
 #    → 期望：zcode-rules@zcode-rules-plugin … hooks: 1, mcp: plugin:zcode-rules:zcode-rules
 node <CLI> plugins list --verbose
 ```
-装好后**重启 ZCode**（面板首次出现需要重启，不重启会以为没装成），然后打开面板：**会话内按 `Ctrl`+`Alt`+`B`** → 侧栏「插件市场」→ **ZCode Rules** 卡片右上角「**打开**」。
+装好后**重启 ZCode**（面板首次出现需要重启，不重启会以为没装成），然后打开面板：**会话内按 `Ctrl`+`Alt`+`B`** → 侧栏「插件市场」→ **ZCode 规则** 卡片右上角「**打开**」。
 
 ## 能做什么
 
 **升级**：`plugins install zcode-rules@zcode-rules-plugin` 即可原地升级（**不要先 uninstall** —— 卸载会删掉你的规则与策略）。
 
-> 面板在哪：会话内 `Ctrl`+`Alt`+`B` → 侧栏「插件市场」→ **ZCode Rules** 卡片右上角「**打开**」。详情页的「立即试用」**不会**打开面板（它只把示例提示词预填进新会话）；详情页「配置」只有 `启用规则` 与 `看门狗秒数` 两个原生控件 —— 规则表和内容策略输入框都在面板里。
+> 面板在哪：会话内 `Ctrl`+`Alt`+`B` → 侧栏「插件市场」→ **ZCode 规则** 卡片右上角「**打开**」。详情页的「立即试用」**不会**打开面板（它只把示例提示词预填进新会话）；详情页「配置」只有 `启用规则` 与 `看门狗秒数` 两个原生控件 —— 规则表和内容策略输入框都在面板里。
 
 - **写命令级规则**：工具 + 正则匹配 + allow/deny。first-match-wins，数组顺序有意义。
 - **写内容策略**：一段自由文本（如「提交信息一律中文」「回答先给结论」），投影给模型读。
@@ -46,7 +46,7 @@ node <CLI> plugins list --verbose
 
 ### 规则写了却像没生效？三个最常见原因
 
-1. **命令本来就不会被询问** —— ZCode 自带只读命令白名单（**74 个**：46 个任意参数命令 + 49 个按 flag 判定的策略命令，去重后 74），走免询问路径，hook 没有参与机会。常见的 `ls` `cat` `echo` `grep` `find` `rg` `jq` `head` `tail` `wc` `sort` `uniq` `ps` `pwd` `whoami` 都在名单里 —— **这些命令不需要写规则**。测规则请用确实会被询问的命令（`touch`、`rm`、`npm --version`、`git -C <dir> status`）。完整清单见 [docs/REPRODUCE.md](docs/REPRODUCE.md) §三。
+1. **命令本来就不会被询问** —— ZCode 自带只读命令白名单（**74 个**），走免询问路径，hook 没有参与机会。`ls` `cat` `echo` `grep` `find` `rg` `jq` 等常用命令都在名单里，**不需要写规则**。测规则用确实会被询问的命令：`touch`、`rm`、`npm --version`、`git -C <dir> status`。完整清单见 [docs/REPRODUCE.md](docs/REPRODUCE.md) §三。
 2. **正则转义写错** —— `commandPattern` 是**正则**。JSON 里写 `"\\."` 落盘是 `\.`（匹配字面点号，正确）；写 `"\\\\."` 落盘是 `\\.`（匹配字面反斜杠）⇒ 永不命中。在面板里直接写 `\.` 即可，不必操心 JSON 转义。
 3. **锚点与实际命令不匹配** —— 实际命令形态可能是 `touch "C:/path/x.probe-file"`（带引号）。`^touch$` 匹配不上；用 `touch .*probe-file` 这类宽松写法。
 
@@ -76,7 +76,7 @@ node <CLI> plugins install zcode-rules@my-market
 
 ## 可靠性与证据
 
-CI 三步全绿（`ubuntu-latest` + Node 24，**无依赖安装步骤**）：
+CI 三步全绿（**三平台矩阵**：ubuntu / macos / windows，各 Node 24，**无依赖安装步骤**）：
 
 ```
 参照实现保真（4 文件 sha256 + 副本一致）  结论：4 个参照实现逐字节一致（exit 0）

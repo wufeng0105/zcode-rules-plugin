@@ -97,7 +97,7 @@ node ../scripts/check-docs.mjs
 node --test ../tests/
 ```
 
-CI（`../.github/workflows/ci.yml`）跑的就是这三步，`ubuntu-latest` + Node 24，**无任何依赖安装步骤**。
+CI（`../.github/workflows/ci.yml`）跑的就是这三步，**三平台矩阵**（ubuntu / macos / windows）各 Node 24，**无任何依赖安装步骤**。
 
 ## 来源与保真
 
@@ -116,3 +116,5 @@ node ../scripts/verify-fidelity.mjs
 ```pwsh
 node ../docs/isolation/tools/run-with-fingerprint.mjs --label <label> -- node ../scripts/smoke-upgrade.mjs
 ```
+
+贡献前先读 [../CONTRIBUTING.md](../CONTRIBUTING.md)；安全边界与漏洞报告见 [../SECURITY.md](../SECURITY.md)。

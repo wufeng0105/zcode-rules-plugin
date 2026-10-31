@@ -28,7 +28,7 @@
 
 ## 一、要解决的两件事
 
-1. **规则外置**：hook 判据从"写死在脚本里"抽成可读可改的 JSON 规则文件
+1. **规则外置**：hook 判据从"写死在脚本里"抽成可读可改的 JSON 规则源
 2. **一条命令自检**：同时回答"上游是否漂移"与"规则投影是否一致"，三态退出码
 
 ## 二、规则源单一性（J3-6，用户 Q-14 裁定）
@@ -51,7 +51,7 @@ rules/<name>.json   ← 唯一权威
 | 提示词只影响"该怎么做"，不影响"能不能做" | R-22 结论（阶段二） | 两者职责不同，但**规则内容应当同源** |
 
 **冲突处理（用户的裁定）**：
-- **规则文件是权威**，AGENTS.md 段是它的投影
+- **规则源是权威**，AGENTS.md 段是它的投影
 - **不允许手改两份**：手改投影会被 `selfcheck.mjs` 判红（已实测，见 §五 J3-6）
 - 改了规则忘记重新导出也会被判红（已实测）
 
@@ -71,11 +71,11 @@ node docs/zcode-mod/selfcheck/rules/export-agents.mjs --rules <rules.json> --age
 
 | 字段 | 取值 | 默认 | 语义 |
 | --- | --- | --- | --- |
-| `unmatched` | `"abstain"` \| `"deny"` | **`"abstain"`** | 规则不命中时怎么办。`abstain` = 显式退赛，**产品行为完全不变**（用户自己决定怎么做） |
+| `unmatched` | `"abstain"` \| `"deny"` | **`"abstain"`** | 规则不命中时怎么办。`abstain` = 显式弃权，**产品行为完全不变**（用户自己决定怎么做） |
 | `onTimeout` | `"deny"`（**唯一可选**） | `"deny"` | **已介入但没能及时裁决**时怎么办 |
 | `watchdogMs` | 正整数毫秒 | **`120000`（产品值 2 分钟）** | 看门狗期限。件 1 实验用的 2000ms 只是实验值，不是默认 |
 
-**为什么 `onTimeout` 只有 `deny`**：其它语义（如"退回问人"）依赖 broker 自己超时/明确失败，而实测 broker 退赛后**仍会无限等**（`permissionTimeoutMs` 全仓无 setter）。**把不可实现的选项写进 schema 比不写更糟**（用户原话）。等备选 B 或上游补 host 超时后再开。
+**为什么 `onTimeout` 只有 `deny`**：其它语义（如"退回问人"）依赖 broker 自己超时/明确失败，而实测 broker 弃权后**仍会无限等**（`permissionTimeoutMs` 全仓无 setter）。**把不可实现的选项写进 schema 比不写更糟**（用户原话）。等备选 B 或上游补 host 超时后再开。
 
 ### 三种输出的显式形态（可区分，不能混淆）
 
@@ -91,7 +91,7 @@ node docs/zcode-mod/selfcheck/rules/export-agents.mjs --rules <rules.json> --age
 - 非法 stdout → 返回 `undefined` 或抛错
 - 两者的日志形态与"**静默失效**"无法区分（阶段二复核反证①实证：`exit 0` + 非法输出 = 无 `hook.run.failed`、无 warn、`outcome="success"`）
 
-⇒ 只有"**合法 JSON + 无 decision + 带 systemMessage 标记**"能让人从日志上区分"作者主动退赛"与"故障静默失效"。
+⇒ 只有"**合法 JSON + 无 decision + 带 systemMessage 标记**"能让人从日志上区分"作者主动 abstain"与"故障静默失效"。
 
 ### 完整字段
 
@@ -155,7 +155,7 @@ node docs/zcode-mod/selfcheck/selfcheck.mjs --rules <rules.json> --agents-md <AG
 | A4-user-once | `core/src/permission/service.ts:144` | `user-once` 范围；决定哪些请求跳过 hook |
 | A5-runner-gate | `core/src/runtime/helpers/runtime-tools.ts:95` | runner 启用门；"配了却不跑/没配却在跑"都在这里 |
 | A6-permission-timeout-field | `core/src/runtime/types.ts:139` | 无 host 超时的证据锚点；**上游若补了 setter，看门狗策略需重议** |
-| A7-no-decision-passthrough | `core/src/hooks/output.ts:18`（只要求存在） | 显式退赛的语义基础（无决定 → 空结果） |
+| A7-no-decision-passthrough | `core/src/hooks/output.ts:18`（只要求存在） | 显式 abstain 的语义基础（无决定 → 空结果） |
 
 > 锚点不是随便挑的：每条都对应一个"变了就会让 R-01 结论失效"的机制点。A6 尤其重要——它是"看门狗为什么必须自己实现"的证据。
 
