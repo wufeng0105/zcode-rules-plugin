@@ -82,7 +82,7 @@ node ../docs/isolation/tools/run-with-fingerprint.mjs --label my-label -- node <
 
 ## 三、仓库里现成的驱动脚本
 
-不用从零写。`../scripts/proof/` 下有四份，路径全部可用环境变量覆盖，直接跑或作为模板改：
+不用从零写。`../scripts/proof/` 下有五份，路径全部可用环境变量覆盖，直接跑或作为模板改：
 
 | 脚本 | 验什么 |
 | --- | --- |
@@ -90,6 +90,7 @@ node ../docs/isolation/tools/run-with-fingerprint.mjs --label my-label -- node <
 | `d3-real-session.mjs` | D-3：真实会话里 hook 是否放行 |
 | `p8-real-upgrade.mjs` | 换版本升级：真源保留 + 投影幂等 + 产物零改动 |
 | `t68-project-rules.mjs` | v0.4.2 的 `projectRules:false`：只投影内容策略段、摘除规则段，且 hook 7 条规则照常判定 |
+| `upgrade-recheck.mjs` | **ZCode 本体升级后**：注册面 / 产品识别 / 数据面 / hook 直判 / MCP 往返五层复查（只读） |
 
 可覆盖的环境变量：
 

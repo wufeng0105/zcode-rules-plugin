@@ -147,6 +147,24 @@ node <CLI> plugins install zcode-rules@zcode-rules-plugin
 
 **不要先 `uninstall` 再装。** 卸载会删掉插件的数据目录，你的规则和策略会一起丢。
 
+### 升级 ZCode 本体之后要复查什么
+
+插件挂在 ZCode 的四个契约面上：插件注册（`hooks` / `mcpServers` 声明）、`PermissionRequest` hook 调用、MCP stdio 握手、`userConfig` 注入。产品升级后按这个顺序查，**一层不过就停在那层**：
+
+1. **插件还在**：`plugins list --verbose`，本插件那行应为 `[enabled]`，下面一行是 `hooks: 1, mcp: plugin:zcode-rules:zcode-rules`。看不到就先重启 ZCode。
+2. **清单仍合法**：`plugins validate <安装缓存目录>` → `Plugin manifest is valid`。
+3. **MCP 能用**：打开面板，状态/规则表/自检三屏能读出数；宿主日志里 `mcp.ui.tool.call` 的 `isError` 应为 `false`。
+4. **hook 还在判定**：开一个新会话发一条**会被询问**的命令（如 `touch check.tmp`）——命中 allow 规则时应直接执行、不弹窗；随后日志 `tool.permission.resolved` 的 `reason` 应为 `Allowed by PermissionRequest hook`。
+5. **投影没走样**：面板「自检与版本」里 `projection-mode` 与你的配置一致；`rules-section` / `policy-section` 不是 `warn`（配置关闭规则段投影时 `rules-section` 为 `info`，属预期）。
+
+第 1–3、5 步可以一条命令跑完（只读，不改任何文件）：
+
+```pwsh
+node scripts/proof/upgrade-recheck.mjs
+```
+
+**实测提醒**：升级/刚重启的瞬间，宿主日志里可能出现多条 `mcp.server.failed · spawn node ENOENT`——同一时刻 `codegraph`、`node_repl` 等也会一起失败，属**环境级抖动**（进程拉起时 PATH 尚未就绪），重开一个会话即恢复；不是插件缺陷，也不影响 0.4.3 的 manifest。
+
 ### 卸载干净（三步）
 
 ```pwsh
