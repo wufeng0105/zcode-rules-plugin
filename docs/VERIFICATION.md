@@ -159,7 +159,29 @@ node --test tests/                 # 197 例
 
 **CI 能证明什么、不能证明什么**：它能证明「代码没退化、文档没断链、参照实现没被改」。它**不能**证明 hook 在真实环境生效——那需要真的 ZCode 桌面版和真的会话，只能在本地跑。
 
-## 十、这个插件没覆盖的范围
+## 十、v0.4.3：投影开关的真实 GUI 验证
+
+「规则段要不要投影进 `AGENTS.md`」这个开关（产品 `userConfig.projectRules`）在发布后做过一次**真实 GUI 端到端**验证——不是在 CI 里跑，也不是在隔离环境里模拟 env，而是走产品自己的配置链路。
+
+**操作（人工，真实 ZCode 桌面 3.16.3 + 插件 0.4.3）**：设置 → 插件 → 已安装 → ZCode 规则 → 配置 → 关闭「投影规则段」→ 保存配置 → 重启 ZCode → 在面板里保存 7 条规则与内容策略。
+
+**结果**：
+
+| 检查点 | 观测值 |
+| --- | --- |
+| 开关落盘位置 | `config.json` 的 `plugins.options` 中该插件 = `{ "projectRules": false }` |
+| `AGENTS.md` | 4203 B |
+| 规则段 | `BEGIN zcode-rules` **不存在** |
+| 内容策略段 | `BEGIN zcode-content-policy` 存在 |
+| 规则 id 残留 | 0 处 |
+| 自检 | `ok=true`、`errors=0`、`warnings=0`；`projection-mode`=关闭（info）、`rules-section`=info（预期态）、`policy-section`=ok、`version`=v0.4.3 |
+| hook 判定（读 `rules.json`） | `git status` → allow；`rm -rf` → deny；未命中 → abstain |
+
+**这条链路为什么可信**：值不是插件自己存的，而是 ① manifest 的 `userConfig.projectRules`（详情页「配置」里的原生开关）→ ② 产品写 `config.json` 的 `plugins.options` → ③ 产品按 manifest 的 `${user_config.projectRules}` 注入 MCP server 的 `env` → ④ `../src/mcp/server.mjs` 解析成 boolean，并作为**显式参数**传给纯函数（`exportAgents` / `runSelfcheck`）。发布前另在隔离环境做过同类验证（模拟产品注入的 env）：51 条断言全过、真实 home 指纹零差异。
+
+**局限**：需要人工在 GUI 里关开关并重启，无法进 CI 自动化——与下面「面板验证无法自动重跑」属于同一类缺口。
+
+## 十一、这个插件没覆盖的范围
 
 分两类，别混。第一类是**产品能力所不及**（不是插件缺陷），第二类是**本项目没做到的**（验证缺口）。
 

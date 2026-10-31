@@ -62,7 +62,7 @@ say("[D-3] 已写入 1 条 allow 规则（d3-allow-echo，匹配 `echo d3-canary
 // 投影（让 AGENTS.md 与真源一致，避免 rules-section warn 干扰）
 const exp = spawnSync(
   process.execPath,
-  [path.join("C:\\Users\\Administrator\\Downloads\\zcode-rules-plugin", "src", "rules", "export-agents.mjs"), "--rules", path.join(DATA, "rules.json"), "--agents-md", AGENTS, "--state", path.join(RT, "install-state.json")],
+  [path.join(PLUGIN_ROOT, "src", "rules", "export-agents.mjs"), "--rules", path.join(DATA, "rules.json"), "--agents-md", AGENTS, "--state", path.join(RT, "install-state.json")],
   { encoding: "utf8" },
 );
 say(`[D-3] export exit=${exp.status}`);
@@ -197,10 +197,10 @@ try {
   failed++;
 } finally {
   // 恢复空规则（零行为基线）
-  const empty = JSON.parse(readFileSync("C:\\Users\\Administrator\\Downloads\\zcode-rules-plugin\\rules.default.json", "utf8"));
+  const empty = JSON.parse(readFileSync(path.join(PLUGIN_ROOT, "rules.default.json"), "utf8"));
   writeFileSync(path.join(DATA, "rules.json"), `${JSON.stringify(empty, null, 2)}\n`, "utf8");
   writeFileSync(path.join(DATA, "content-policy.json"), `${JSON.stringify({ version: 1, text: "" }, null, 2)}\n`, "utf8");
-  spawnSync(process.execPath, ["C:\\Users\\Administrator\\Downloads\\zcode-rules-plugin\\src\\rules\\export-agents.mjs", "--rules", path.join(DATA, "rules.json"), "--agents-md", AGENTS, "--state", path.join(RT, "install-state.json")], { encoding: "utf8" });
+  spawnSync(process.execPath, [path.join(PLUGIN_ROOT, "src", "rules", "export-agents.mjs"), "--rules", path.join(DATA, "rules.json"), "--agents-md", AGENTS, "--state", path.join(RT, "install-state.json")], { encoding: "utf8" });
   rmSync(CANARY, { recursive: true, force: true });
   child.stdin.end();
   child.kill();

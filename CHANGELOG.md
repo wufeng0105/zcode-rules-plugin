@@ -7,6 +7,7 @@
 - **行为**：关掉后，任何导出（面板保存也算）只投影内容策略段，并摘除已有规则段；hook 判定读 `rules.json`，完全不受影响。MCP 工具显式传 `projectRules` 仍可**一次性**覆盖，不改配置、不落盘。
 - **自检**：新增 `projection-mode`（info，报当前模式）；规则段缺失时的口径分流——配置关闭时是 `info`（预期态），配置开启时仍是 `warn`（"该投影却没导出"的信号不丢）。两者都带 `absent: true`，面板不会误报成手改。
 - **兼容**：默认值 `true`，不配置时行为与 0.4.2 逐字节一致；显式参数语义不变。旧版产品若不展开 `${user_config.*}`，模板会原样传入，解析退化成 `true`（安全侧）。
+- **证据（真实 GUI，发布后补记）**：在真实 ZCode 桌面 3.16.3 上按 GUI 路径关掉「投影规则段」并重启后，`config.json` 的 `plugins.options` 写入 `projectRules: false`；`AGENTS.md` 4203 B、无规则段、只有内容策略段；自检 `projection-mode`=关闭、`rules-section`=info、`errors=0`；hook 仍 allow / deny / abstain。详见 [`docs/VERIFICATION.md`](docs/VERIFICATION.md) §十。
 - **证据（产品侧）**：已安装的 CLI 产物 `zcode.cjs` 内含 `if(name.startsWith("user_config.")){...}` 展开逻辑；MCP server 的 `env` 经 `resolveStringRecord → resolveTemplate` 展开。
 - 版本号 `0.4.3`：`package.json`、`.zcode-plugin/plugin.json`、`marketplace.json`（version ×2 + `source.ref`）、面板字样（`panel-version` / `PANEL_VERSION`）同步。
 - 测试：新增 `tests/projection-mode.test.mjs`（8 例：manifest 声明与 env 接线、env 解析边界、MCP 缺省走配置、显式参数覆盖、自检口径分流）；`node --test tests/` 共 **197 例全绿**（原 189 + 8）。
