@@ -30,7 +30,7 @@ node <CLI> plugins install zcode-rules@zcode-rules-plugin
 #    → 期望：zcode-rules@zcode-rules-plugin … hooks: 1, mcp: plugin:zcode-rules:zcode-rules
 node <CLI> plugins list --verbose
 ```
-装好后打开面板：**会话内按 `Ctrl`+`Alt`+`B`** → 侧栏「插件市场」→ **ZCode Rules** 卡片右上角「**打开**」。
+装好后**重启 ZCode**（面板首次出现需要重启，不重启会以为没装成），然后打开面板：**会话内按 `Ctrl`+`Alt`+`B`** → 侧栏「插件市场」→ **ZCode Rules** 卡片右上角「**打开**」。
 
 ## 能做什么
 
