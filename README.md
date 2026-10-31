@@ -182,7 +182,11 @@ ZCode 自带一份只读命令白名单（**74 个**：`ls`、`cat`、`echo`、`
 
 先说产品本来的限制（不是插件缺陷）：
 
-- **`guarded` 档位不覆盖**——该档位下危险命令绕过 hook。
+- **「自主模式」（`guarded`）与「完全访问」（`yolo`）下规则不生效**——这两个档位不走产品的权限请求流程：
+  普通命令自动放行、危险命令由产品自带安全规则（`safety.bash.*`）接管并弹确认，`PermissionRequest` hook **不参与**。
+  想让规则生效，把权限模式切到**构建模式**或**编辑模式**。
+  源码依据：`core/src/permission/service.ts` 里 `(mode === "yolo" || mode === "guarded") → allow("mode.yolo")`，
+  且 guarded 的危险命令分支带 `approvalMode: "user-once"`，`permission-flow.ts` 据此跳过 hook。
 - **`-p` 无人值守面不覆盖**——没有权限客户端时，hook 会被竞速取消。
 - **内容策略不是沙箱**——它只是给模型读的提示文本，真正强制拦截的是 hook 的 allow/deny。想让某类命令绝对跑不了，写规则，别指望提示词。
 - **产品卸载不摘 `AGENTS.md` 里的段**——卸载只清插件自身注册，段还留着，要自己删。

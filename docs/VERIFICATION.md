@@ -188,7 +188,7 @@ node --test tests/                 # 197 例
 
 ### 能力所不及（产品边界）
 
-- **`guarded` 档位**：该档位下危险命令绕过 hook，规则不生效。
+- **`guarded`（自主模式）与 `yolo`（完全访问）档位**：这两个档位不走产品的权限请求流程——普通命令自动放行、危险命令由产品安全规则（如 `safety.bash.*`）接管并弹确认，`PermissionRequest` hook 不参与，规则不生效。源码依据：`core/src/permission/service.ts` 的 `(mode === "yolo" || mode === "guarded") → allow("mode.yolo")`；guarded 危险命令分支带 `approvalMode: "user-once"`，`core/src/tool/executor/permission-flow.ts` 据此不跑 hook。
 - **`-p` 无人值守面**：没有权限客户端时，hook 会被竞速取消。
 - **GUI 弹窗路径**：本结论在 Host↔CLI 协议面成立。GUI 是另一种客户端实现，走同一套竞速路径，但没有单独验证。
 - **内容策略不是沙箱**：它只是给模型读的提示文本。真正强制拦截的是 hook 的 allow/deny。想让某类命令绝对跑不了，写规则，别指望提示词。

@@ -1,5 +1,6 @@
 ## 未发布（工程化）
 
+- **修正一条产品边界表述**（源码实证）：不只是「危险命令绕过 hook」——**自主模式（`guarded`）与完全访问（`yolo`）整个档位都不走权限请求流程**（普通命令自动放行、危险命令由产品 `safety.bash.*` 规则接管，`approvalMode: "user-once"` 使 hook 被跳过），因此规则在这两个档位不生效。README / VERIFICATION / QUICKSTART 已同步；测试 hook 请用构建模式或编辑模式。
 - **新增升级复查驱动** `scripts/proof/upgrade-recheck.mjs`（只读）：ZCode 本体升级后按「注册面 → 产品识别 → 数据面 → hook 直判 → MCP 往返」五层复查，20 项断言；路径与插件 id 可用环境变量覆盖。
 - **QUICKSTART 新增「升级 ZCode 本体之后要复查什么」**：五步手工清单 + 一条命令的自动版；并记录实测到的环境级抖动（升级瞬间多条 MCP server 报 `spawn node ENOENT`，重开会话即恢复，非插件缺陷）。
 - 实测载体：ZCode 桌面 **3.17.1**（CLI 0.17.1）+ 插件 0.4.3：注册/validate/hook 三态/MCP 6 工具/自检/投影幂等全过；宿主日志确认升级后面板发起 8 次 MCP 工具调用且 `isError=false`。

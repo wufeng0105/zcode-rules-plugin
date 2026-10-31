@@ -95,7 +95,9 @@ ZCode 对一批**只读命令**不询问——直接放行，不弹窗。`ls`、
 
 按这个顺序排查，前两个占了绝大多数。
 
-**先确认这条命令会不会被询问。** 用只读白名单里的命令（`echo`、`ls`、`cat` 等）做实验是查不出问题的——它们根本不进权限询问环节。换成 `touch`、`rm` 再试。
+**先看权限模式是不是「自主模式 / 完全访问」。** 这两个档位下由产品自己把关（普通命令自动放行、危险命令由产品弹确认），`PermissionRequest` hook 不参与，规则写什么都不生效。切到**构建模式**或**编辑模式**再测。
+
+**再看这条命令会不会被询问。** 用只读白名单里的命令（`echo`、`ls`、`cat` 等）做实验是查不出问题的——它们根本不进权限询问环节。换成 `touch`、`rm` 再试。
 
 **再检查正则转义。** `commandPattern` 是正则表达式。在 `rules.json` 这个 JSON 文件里，反斜杠要写两个：
 
@@ -154,7 +156,7 @@ node <CLI> plugins install zcode-rules@zcode-rules-plugin
 1. **插件还在**：`plugins list --verbose`，本插件那行应为 `[enabled]`，下面一行是 `hooks: 1, mcp: plugin:zcode-rules:zcode-rules`。看不到就先重启 ZCode。
 2. **清单仍合法**：`plugins validate <安装缓存目录>` → `Plugin manifest is valid`。
 3. **MCP 能用**：打开面板，状态/规则表/自检三屏能读出数；宿主日志里 `mcp.ui.tool.call` 的 `isError` 应为 `false`。
-4. **hook 还在判定**：开一个新会话发一条**会被询问**的命令（如 `touch check.tmp`）——命中 allow 规则时应直接执行、不弹窗；随后日志 `tool.permission.resolved` 的 `reason` 应为 `Allowed by PermissionRequest hook`。
+4. **hook 还在判定**：开一个新会话发一条**会被询问**的命令（如 `touch check.tmp`）——命中 allow 规则时应直接执行、不弹窗；随后日志 `tool.permission.resolved` 的 `reason` 应为 `Allowed by PermissionRequest hook`。**权限模式必须是构建/编辑模式**——自主模式（`guarded`）与完全访问（`yolo`）下 hook 不参与（见 README「它做不到什么」）。
 5. **投影没走样**：面板「自检与版本」里 `projection-mode` 与你的配置一致；`rules-section` / `policy-section` 不是 `warn`（配置关闭规则段投影时 `rules-section` 为 `info`，属预期）。
 
 第 1–3、5 步可以一条命令跑完（只读，不改任何文件）：
