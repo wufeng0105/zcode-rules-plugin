@@ -1,64 +1,70 @@
 # 贡献指南
 
-感谢你愿意为这个插件花时间。这份文档说明**怎么改、怎么验证、什么不能动**。
+感谢你愿意为这个插件花时间。这份文档只讲三件事：**改之前要知道什么、改完怎么验证、什么绝对不能动。**
 
-## 环境
+## 一、先说清楚：什么该改、什么不该改
+
+这个仓库有两种代码，性质完全不同，处理方式也不同。
+
+| 类型 | 文件 | 能不能改 |
+| --- | --- | --- |
+| **参照实现** | `src/rules/rules-engine.mjs`、`src/rules/agents-section.mjs`、`src/rules/export-agents.mjs`、`src/hooks/permission-rules.mjs` | **一个字节都不许改** |
+| 其余所有代码 | 其它 `src/`、`ui/`、`scripts/`、`tests/` | 可以改，但要过门禁 |
+
+**为什么参照实现不能改**：这四个文件是从 ZCode 自带的验证脚本逐字节复制过来的。整个插件的可信度建立在一个前提上——**本实现的判定逻辑与 ZCode 官方实现完全一致**。改了它们，这个前提就没了，所有基于它的结论都失效。
+
+要改行为，改别的地方；这四个是基准，不是可编辑的代码。
+
+校验命令：
+
+```pwsh
+node scripts/verify-fidelity.mjs
+```
+
+脚本 **fail-closed**：基线缺条目、多出清单外条目、值非法、文件缺失或读失败，任一情况都 `exit 1`。它还额外校验 `docs/selfcheck/` 下的副本与 `src/` 原件逐字节相同——**副本漂移也会被抓**。
+
+**不要为了让校验通过而删基线条目**——那等于让校验静默失效。确实要更新基线，用 `node scripts/verify-fidelity.mjs --list` 重新生成，并在 PR 里说明为什么。
+
+## 二、环境：两条命令就能开工
 
 | 需求 | 版本 |
 | --- | --- |
-| Node.js | **24**（CI 与本地一致；`node --version` 应输出 v24.x） |
-| 依赖 | **零**。不要 `npm install` / `pnpm install` —— 仓库不需要任何第三方包 |
-| 平台 | Windows / macOS / Linux 均可（CI 在 ubuntu-latest + Node 24 上跑） |
+| Node.js | **24** |
+| 依赖 | **零**。不要 `npm install` / `pnpm install` |
+| 平台 | Windows / macOS / Linux 都可以（CI 三平台都跑） |
 
-克隆后直接可用：
-
-```pwsh
-node --test tests/          # 全部测试
-node scripts/verify-fidelity.mjs
-node scripts/check-docs.mjs
-```
-
-## 三条不可动的红线
-
-### 1. 四个参照实现文件必须逐字节不变
-
-```
-src/rules/rules-engine.mjs
-src/rules/agents-section.mjs
-src/rules/export-agents.mjs
-src/hooks/permission-rules.mjs
-```
-
-它们是从 ZCode 检出自带的验证脚本**逐字节复制**过来的参照实现。改动它们会让「本插件行为与 ZCode 自带实现一致」这个前提失效。
-
-基线在 `FIDELITY.json`，校验命令：
+克隆后直接就能跑：
 
 ```pwsh
-node scripts/verify-fidelity.mjs
+node scripts/verify-fidelity.mjs    # 参照实现保真 + 副本一致性
+node scripts/check-docs.mjs         # 文档相对链接与仓库内路径
+node --test tests/                  # 175 例
 ```
 
-脚本是 **fail-closed** 的：基线缺条目、多出清单外条目、值非法、文件缺失或读失败，任一情况都 `exit 1`。**不要为了让校验通过而删基线条目** —— 那等于让校验静默失效。确实需要更新基线时用 `node scripts/verify-fidelity.mjs --list` 重新生成，并在 PR 里说明原因。
+这三条就是 CI 跑的全部内容。**没有依赖安装步骤**——这是刻意的，装了反而引入供应链面和失败源。
 
-### 2. 界面不承诺做不到的事
+## 三、另外两条红线
 
-面板的每一块都必须是真能力。具体地：
+除了参照实现，还有两件事不能做。
 
-- **不写「立即生效」**：内容策略投影到 `AGENTS.md`，而 `AGENTS.md` 是会话开始时的上下文 ⇒ 只能承诺「对新会话生效」。
-- **不提供「一键清空所有规则」按钮**：删规则请在 JSON 编辑框里把 `rules` 改成 `[]` 再保存，用户能看见内容再确认。
-- **不提供假开关**：插件启用态由产品设置页的 `userConfig` 决定，面板读不到就不显示，不猜状态。
-- **每个 `data-action` 必须有真实实现**：改面板时新增按钮要同时在 `ACTIONS` 表里实现它；没有实现的按钮就是假按钮。
+### 红线二：界面不承诺做不到的事
 
-`tests/panel.test.mjs` 会检查这几条。
+面板上每一块都必须是真能力。具体地：
 
-### 3. 不猜路径、不猜状态
+- **不放假按钮**：每个按钮必须落到真实的 MCP 工具调用
+- **不放假开关**：比如「启用」开关由产品的 `userConfig.enabled` 管，MCP 工具没暴露读它，面板就不该显示一个自己都读不到状态的开关
+- **不做做不到的承诺**：不承诺「立即生效」——`AGENTS.md` 是会话开始时的上下文，改了当前会话看不到，只有新会话才生效
+- **不提供一键清空**：删规则要求改 JSON 空数组再保存，让人看见内容再确认一次
 
-数据目录只认宿主注入的 `ZCODE_RULES_DATA` / `ZCODE_PLUGIN_DATA`；缺失时所有工具调用 fail-closed。**不要**改成猜 `~/.zcode/cli/plugins/data/...` 之类的路径 —— 那会在多插件/多用户场景下读错文件。
+### 红线三：不要造第二份数据源
 
-## 改动流程
+规则只能有一份（`rules.json`），内容策略只能有一份（`content-policy.json`）。`AGENTS.md` 里的段是**投影视图**，不是第二份数据。
 
-1. **先写判据**：你要证明什么？写下来（可以是测试断言、也可以是一次性脚本）。
-2. **实现**：最小改动。四个参照实现不碰。
-3. **验证**：跑全量门禁，三条都要 exit 0：
+判定逻辑也很明确：投影永远从数据源重算，两者不允许出现「各自独立演化」的可能。
+
+## 四、改完之后怎么验证
+
+### 必跑：三条门禁
 
 ```pwsh
 node scripts/verify-fidelity.mjs
@@ -66,24 +72,62 @@ node scripts/check-docs.mjs
 node --test tests/
 ```
 
-4. **写文档**：如果改了行为或命令，同步更新 `README.md`；如果是用户可见变化，在 `CHANGELOG.md` 顶部加一条。
-5. **版本号**：用户可见的行为变化才升版本（`package.json` 与 `.zcode-plugin/plugin.json` **必须一起改**）；纯文档或纯内部改动可以不动版本。面板里的版本字样（`panel-version` / `version-panel` / `PANEL_VERSION`）也要一起改 —— `tests/panel.test.mjs` 会检查三处与清单一致。
-6. **提交信息**：中文，格式 `<范围>：<做了什么>`，例如 `WP40：v0.4.1 修复 X`。
+三条都 exit 0 才算过。
 
-## 测试怎么写
+### 改了行为：补测试
 
-- 框架用 Node 内置 `node:test` + `node:assert`，**不要引入测试框架依赖**。
-- 测试文件放 `tests/`，用 `node --test tests/` 跑（`tests/index.js` 是目录入口）。
-- **不要写恒真测试**（断言永远成立的测试比没有测试更糟）。写不出有意义的断言时，先问自己「这条判据真的能翻红吗」。
-- 涉及「红绿双向」的脚本（校验脚本本身），正反两例都要有。
-- 需要临时文件时用 `node:os` 的 `tmpdir()`，测试结束清理。
+有行为改动就补对应测试。测试与实现不一致时，先弄清楚哪个是对的，不要为了通过而改测试。
 
-## 提交与发布
+### 改了文档：`check-docs` 会替你查
 
-- 提 PR 前跑 `node scripts/verify-fidelity.mjs && node scripts/check-docs.mjs && node --test tests/`。
-- CI 会在 GitHub 上重跑这三条，不需要你在描述里贴日志，但**有失败要如实写**。
-- 维护者打 tag 发布（`vX.Y.Z`）。tag 一旦推送就是对外承诺，不要移动已有 tag。
+`check-docs` 检查 7 份受检文档里的相对链接与仓库内路径。**注意路径基准是文件自身所在目录**——`docs/` 下的文件引用仓库根路径要写 `../scripts/…`，不是 `scripts/…`。
 
-## 提问
+这个坑踩过：写错后 `check-docs` 报错，同时 `node --test` 里那条「真实仓库引用全部存在」的用例也会红。两处一起红，说明检查确实在守护内容。
 
-遇到「规则该怎么写」「hook 为什么不生效」这类问题，先看 [README.md](README.md) 的「常见问题」与「故障排查」两节 —— 绝大多数答案在那里。
+### 改了面板：需要人工验证
+
+面板 GUI 行为**没有自动化测试路径**（`mcp/uiOpenInstance` 需要真 GUI 渲染进程提供的 `ownerWebContentsId`）。改了面板，需要：
+
+1. 真机启动 ZCode
+2. 打开面板逐屏看一遍
+3. 截图留档
+
+这是已知的验证缺口，不隐瞒。
+
+## 五、提交前自检清单
+
+- [ ] `verify-fidelity` exit 0（参照实现没动，副本没漂移）
+- [ ] `check-docs` exit 0（没有断链）
+- [ ] `node --test` 全过
+- [ ] 如果有行为改动，补了测试
+- [ ] 如果改了 `AGENTS.md` 相关逻辑，确认「恢复空规则」仍按语义等价判断（不用字节相等）
+- [ ] 如果改了界面，确认没有造假按钮、假开关、做不到的承诺
+- [ ] PR 描述写清：**改了什么、为什么改、改前改后行为差异**
+- [ ] 如果是 bugfix，写明**触发场景、根因证据、修复机制、回归验证**
+
+## 六、PR 怎么写
+
+需要的不是格式，是**别人能复核**。一份合格的 PR 描述包含：
+
+1. **背景**：什么场景下发现了什么问题
+2. **改法**：具体动了哪些文件，为什么这么动
+3. **行为差异**：改前怎样、改后怎样
+4. **验证方式**：跑了什么、结果如何
+
+如果是 bugfix，再加：**根因证据**（不是猜测）、**触发条件**、**回归用例**。
+
+不确定根因时如实写「未确认」，不要根据模块或时间接近去猜归因。
+
+## 七、需要更多信息
+
+| 想了解 | 看 |
+| --- | --- |
+| 代码结构、数据流、MCP 数据面 | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) |
+| 验过了什么、证据强度 | [`docs/VERIFICATION.md`](docs/VERIFICATION.md) |
+| 每条判据怎么自己复跑 | [`docs/REPRODUCE.md`](docs/REPRODUCE.md) |
+| 隔离实验怎么做（改行为前后要验） | [`docs/isolation/RECIPE.md`](docs/isolation/RECIPE.md) |
+| 安全边界与漏洞报告 | [`SECURITY.md`](SECURITY.md) |
+
+---
+
+有安全问题**不要开公开 issue**，走 [`SECURITY.md`](SECURITY.md) 里的私下渠道。

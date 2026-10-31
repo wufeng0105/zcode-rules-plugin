@@ -1,194 +1,110 @@
-# 件 3 方案：规则外置 + 一条命令自检（SELFCHECK）
+# 参照实现与自检脚本
 
-> ## ⚠️ 性质声明：本目录全部是「验证用参考实现」，不是交付实现
->
-> 边界与件 1（`watchdog/WATCHDOG.md`）统一，用同一张表：
->
-> | 维度 | 验证用参考实现（本目录） | 交付实现（未开始，见 `plan/DELIVERY-PLAN.md`） |
-> | --- | --- | --- |
-> | 目的 | 证明机制成立、判据可判 | 让用户装上就用 |
-> | 安装 | 无（实验时手工写隔离 home 的 config.json） | 需 install/uninstall 脚本 |
-> | 默认开启 | **否**（模板空规则集；示例无 enabled 字段） | 需用户决定 |
-> | 写用户真实配置 | **从不**（只写隔离副本与 `.zhll/` 草稿区） | 会写，需用户授权 |
-> | 稳定性承诺 | 无，随判据调整 | 需要 |
-> | 升级后维护 | 靠 `selfcheck.mjs` 一条命令自检 | 需写进交付 README 并要求升级后重跑 |
->
-> 具体到文件：
-> - `rules/rules-engine.mjs`、`rules/export-agents.mjs`、`rules/agents-section.mjs`、`hooks/permission-rules.mjs`、`selfcheck.mjs` → **参考实现**
-> - `rules/template-empty.json`（空模板）、`rules/example-lowrisk.json`（语法示例） → **参考数据**，安装时不写入
-> - 真正的交付形态（安装路径 / 状态归属 / 卸载还原 / 升级复核）见 `plan/DELIVERY-PLAN.md`
->
-> 用户 2026-10-30：「件 3 的产物性质也要标：rules-engine / export-agents / permission-rules 属"参考实现"，界线按件 1 那张表统一写。」
+这个目录放的是**参照实现**：一套能独立运行的规则引擎、段引擎、hook 与自检脚本。它们是插件本体（`src/`）的来源，用来回答一个问题：
 
-> 阶段三第三份产物（顺序 2 → 1 → 3 的第 3 件）｜执行：Lead｜日期：2026-10-30
-> 判据：`plan/STAGE3-BREAKDOWN.md` 件 3 的 J3-1..J3-5 + 用户 2026-10-30 追加的 **J3-6 / J3-7**
-> **性质：验证用参考实现 + 方案，不是交付实现**（无安装、无默认开启、不写用户真实配置）
+> 这套机制为什么成立？换个环境还能不能跑通？
 
----
+**重要：这不是给用户用的。** 用户装插件看 [README.md](../../README.md)；这里是给想验证明白「机制本身对不对」的人看的。
 
-## 一、要解决的两件事
+## 目录里有什么
 
-1. **规则外置**：hook 判据从"写死在脚本里"抽成可读可改的 JSON 规则源
-2. **一条命令自检**：同时回答"上游是否漂移"与"规则投影是否一致"，三态退出码
-
-## 二、规则源单一性（J3-6，用户 Q-14 裁定）
-
-**一份规则源、两个出口**：
-
-```
-rules/<name>.json   ← 唯一权威
-   ├── 出口 1：hook 判据        → selfcheck/hooks/permission-rules.mjs 读它做 allow/deny/abstain
-   └── 出口 2：AGENTS.md 规则段 → rules/export-agents.mjs 投影成人可读文本
-                                   （upsert 幂等，带 BEGIN/END 哨兵）
-```
-
-**为什么必须这样**（不是设计偏好，是产品事实）：
-
-| 事实 | 位置 | 含义 |
+| 文件 | 性质 | 说明 |
 | --- | --- | --- |
-| `AGENTS.md` 是**纯文本全文注入** | `adapters/src/context/index.ts:131` `readFirstTextBytes` → `:167` | 产品**不解析**其结构，只把全文塞进提示词。所以 AGENTS.md 段只能是"给模型看的投影"，**不能当配置源** |
-| hook 的判据是**代码执行** | `core/src/hooks/configured-runner*.ts` | 真正拦截发生在 hook，不在提示词 |
-| 提示词只影响"该怎么做"，不影响"能不能做" | R-22 结论（阶段二） | 两者职责不同，但**规则内容应当同源** |
+| `rules/rules-engine.mjs` | **参照实现** | 校验、判定、`AGENTS.md` 段渲染、一致性自检 |
+| `rules/agents-section.mjs` | **参照实现** | 哨兵段的定位、幂等 upsert、摘除 |
+| `rules/export-agents.mjs` | **参照实现** | 导出与卸载 CLI |
+| `hooks/permission-rules.mjs` | **参照实现** | 三态判定 + 看门狗 |
+| `selfcheck.mjs` | **参照实现** | 一条命令跑完九项自检 |
+| `rules/template-empty.json` | 参考数据 | 空模板，安装时不写入 |
+| `rules/example-lowrisk.json` | 参考数据 | 语法示例，安装时不写入 |
 
-**冲突处理（用户的裁定）**：
-- **规则源是权威**，AGENTS.md 段是它的投影
-- **不允许手改两份**：手改投影会被 `selfcheck.mjs` 判红（已实测，见 §五 J3-6）
-- 改了规则忘记重新导出也会被判红（已实测）
+前五个文件与 `src/` 下的同名文件**逐字节相同**，由 `../../scripts/verify-fidelity.mjs` 保证。注意 `selfcheck.mjs` 例外：它**没有** `src/` 对应物（那九个自检项在插件里由 `../../src/mcp/operations.mjs` 实现），所以它是本目录独有的脚本，不参与副本一致性校验。
 
-**导出方式**：
-```powershell
-# 导出（幂等：有段就替换，无段就追加）
-node docs/zcode-mod/selfcheck/rules/export-agents.mjs --rules <rules.json> --agents-md <AGENTS.md>
-# 只看将写入什么
-node docs/zcode-mod/selfcheck/rules/export-agents.mjs --rules <rules.json> --agents-md <AGENTS.md> --dry-run
-```
+## 为什么会有两份
 
-## 三、规则 schema（用户 Q-13 / Q-15 裁定）
+这套代码最初是从 ZCode 自带的验证脚本原样复制的——那套脚本证明了「规则外置 + hook 判定 + 段投影」这个思路可行。复制过来当基准，好处是：
 
-### 关键设计：`unmatched` 与 `onTimeout` 是正交两件事
+- **改动可以被察觉**：`src/` 下的文件若与基准不同，`verify-fidelity` 直接报错
+- **机制可独立验证**：这套参照实现不依赖插件框架，能单独跑
 
-用户在审阅件 1 时指出：W2 的实际语义是"规则不命中 → 2s → deny"，等于**白名单外的请求自动拒绝**，还改了产品原行为。因此拆成两个字段：
+代价是要维护两份副本。所以校验脚本除了比对 sha256 基线，还会比对「副本 ≡ 原件」——副本漂移不会无声发生。
 
-| 字段 | 取值 | 默认 | 语义 |
-| --- | --- | --- | --- |
-| `unmatched` | `"abstain"` \| `"deny"` | **`"abstain"`** | 规则不命中时怎么办。`abstain` = 显式弃权，**产品行为完全不变**（用户自己决定怎么做） |
-| `onTimeout` | `"deny"`（**唯一可选**） | `"deny"` | **已介入但没能及时裁决**时怎么办 |
-| `watchdogMs` | 正整数毫秒 | **`120000`（产品值 2 分钟）** | 看门狗期限。件 1 实验用的 2000ms 只是实验值，不是默认 |
+## 九项自检是怎么设计的
 
-**为什么 `onTimeout` 只有 `deny`**：其它语义（如"退回问人"）依赖 broker 自己超时/明确失败，而实测 broker 弃权后**仍会无限等**（`permissionTimeoutMs` 全仓无 setter）。**把不可实现的选项写进 schema 比不写更糟**（用户原话）。等备选 B 或上游补 host 超时后再开。
+插件面板的「运行检查」，底层就是这九项。设计上有三条原则。
 
-### 三种输出的显式形态（可区分，不能混淆）
+### 原则一：`unmatched` 与 `onTimeout` 是正交的两件事
 
-| 判定 | 输出 | 产品侧解释 |
+这两个最容易混，混了会让空规则时的行为出错。
+
+| 字段 | 取值 | 什么时候用 |
 | --- | --- | --- |
-| **allow** | `{hookSpecificOutput:{hookEventName, decision:{behavior:"allow"}}}` | 放行 |
-| **deny** | `{continue:false, reason, hookSpecificOutput:{..., decision:{behavior:"deny", message}}}` | 拒绝 |
-| **abstain** | `{hookSpecificOutput:{hookEventName}, systemMessage:"zcode-rules: abstain (<原因>)"}` | **合法 JSON 但无 decision** → `processHookOutput`（`hooks/output.ts:18-70`）得到 `permissionRequestResult=undefined` → 该 hook 视为"无决定" → 竞速 `return undefined` → broker 继续单边等 ⇒ **产品原行为** |
-| **超时** | `process.exit(2)` | `configured-runner-callback.ts:195-224` → `behavior:"deny"` |
+| `unmatched` | `"abstain"`（默认）/ `"deny"` | 规则**判定完了，没匹配上** |
+| `onTimeout` | `"deny"`（唯一可选） | **还没判定完，超时了** |
 
-**为什么 abstain 必须显式输出而不是"不输出"/"输出非法"**：
-- 空 stdout → `parseHookStdout` 返回 `undefined`（`:166-167`）
-- 非法 stdout → 返回 `undefined` 或抛错
-- 两者的日志形态与"**静默失效**"无法区分（阶段二复核反证①实证：`exit 0` + 非法输出 = 无 `hook.run.failed`、无 warn、`outcome="success"`）
+第一个是「判完了，结果是不管」；第二个是「没判完，只能拒」。前者产品行为不变，后者是失败时的兜底。
 
-⇒ 只有"**合法 JSON + 无 decision + 带 systemMessage 标记**"能让人从日志上区分"作者主动 abstain"与"故障静默失效"。
+**为什么 `onTimeout` 只能选 `deny`**：其它语义（比如「超时了就去问人」）依赖 broker 自己提供超时或明确失败机制，而实测 broker 在这条路径上会一直等（`permissionTimeoutMs` 全仓库没有 setter）。把实现不了的选项写进 schema，比不写更糟——用户会以为能用。
 
-### 完整字段
+### 原则二：三种输出必须可区分
 
-```json
-{
-  "version": 1,
-  "name": "规则集名字（用于日志与 AGENTS.md 段标题）",
-  "description": "可选说明",
-  "unmatched": "abstain",          // 默认；"deny" 表示不命中即拒
-  "onTimeout": "deny",             // 唯一可选值
-  "watchdogMs": 120000,            // 默认 2 分钟
-  "rules": [
-    {
-      "id": "唯一标识（审计用，必填且唯一）",
-      "tool": "Bash",              // 工具名，或 "*" 任意
-      "commandPattern": "^git status$",  // 可选；正则，匹配 toolInput.command
-      "decision": "allow",         // allow | deny | ask
-      "comment": "为什么这条规则存在（allow 时强烈建议写，审计用）"
-    }
-  ]
-}
-```
+hook 有三种结局，输出形态必须让人从日志上就能分辨：
 
-**求值规则**：`rules` 是**有序数组，first-match-wins**（先命中先用）。`id` 必须唯一，否则校验失败。
-
-**校验**：`validateRules()` 会拦下：version 不对、name 空、unmatched/onTimeout 非法、watchdogMs 非法、rules 非数组、id 重复/空、decision 非法、commandPattern 非法正则、allow 无 comment（警告，不阻断）。
-
-## 四、安全边界交给用户（用户 Q-15 裁定）
-
-**本件只交 schema + 空模板 + 2-3 条示例，不自拟默认放行策略。**
-
-- `rules/template-empty.json`：**空规则集**（`rules: []`），默认不放行任何东西
-- `rules/example-lowrisk.json`：4 条示例（2 allow / 1 deny / 1 ask），**明确标注"示例，不是默认策略，请按自己的判断增删"**
-
-**哪些工具默认放行、哪些必须问 = 安全边界 = 只有用户能定。** 本方案不预设。
-
-## 五、一条命令自检（三态 + 单一性）
-
-```powershell
-node docs/zcode-mod/selfcheck/selfcheck.mjs
-node docs/zcode-mod/selfcheck/selfcheck.mjs --rules <rules.json> --agents-md <AGENTS.md>
-```
-
-### 退出码语义
-
-| exit | 含义 | 触发条件 |
+| 结局 | 输出 | 关键特征 |
 | --- | --- | --- |
-| **0** | 无漂移 | 7 条锚点全部命中且行号一致；若给了 rules+agents-md，投影也一致 |
-| **1** | **漂移 / 投影不一致** | 锚点未命中、行号移位、AGENTS.md 段被手改、改了规则没重新导出 |
-| **2** | **环境不可用** | 源码根不存在、node < 20、锚点文件缺失、规则文件不存在/非法 JSON/校验失败、AGENTS.md 不存在 |
+| `allow` | `{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}` | 有 `decision` |
+| `deny` | `{"continue":false,"reason":"…","hookSpecificOutput":{…,"decision":{"behavior":"deny","message":"…"}}}` | 有 `decision` + `continue:false` |
+| `abstain` | `{"hookSpecificOutput":{"hookEventName":"PermissionRequest"},"systemMessage":"zcode-rules: abstain(原因)"}` | **合法 JSON，但没有 `decision` 字段** |
 
-**为什么 1 和 2 必须分开**（用户 J3-3 要求）：exit 1 意味着"上游改了，我要重验"，exit 2 意味着"这台机器/这份检出根本没法验"。**混在一起会把人引向错误的处置动作。**
+`abstain` 那一行是关键：它**故意不表态**。产品侧解析后得到「无决定」，于是继续按原逻辑走——这就是「空规则零行为变化」的实现方式。
 
-### 7 条锚点（漂移检测）
+**为什么不干脆输出空**：空 stdout 或非法 JSON 与「hook 悄悄坏了」在日志上无法区分。显式 abstain 让审计时能分清「作者主动弃权」和「故障静默失效」。
 
-| id | 文件:行 | 为什么敏感 |
-| --- | --- | --- |
-| A1-hook-event-names | `contracts/src/hooks/index.ts:7` | 7 个事件名枚举；改名/增删会让 config 里 `PermissionRequest` 失效 |
-| A2-runHooks-switch | `core/src/tool/executor/permission-flow.ts:205` | hook 是否参与竞速的**总开关** |
-| A3-race-broker-first | `core/src/tool/executor/permission-responder-race.ts:62` | broker 先启动 + claimResponse 语义；决定 hook 有没有窗口 |
-| A4-user-once | `core/src/permission/service.ts:144` | `user-once` 范围；决定哪些请求跳过 hook |
-| A5-runner-gate | `core/src/runtime/helpers/runtime-tools.ts:95` | runner 启用门；"配了却不跑/没配却在跑"都在这里 |
-| A6-permission-timeout-field | `core/src/runtime/types.ts:139` | 无 host 超时的证据锚点；**上游若补了 setter，看门狗策略需重议** |
-| A7-no-decision-passthrough | `core/src/hooks/output.ts:18`（只要求存在） | 显式 abstain 的语义基础（无决定 → 空结果） |
+### 原则三：七条锚点用来检测漂移
 
-> 锚点不是随便挑的：每条都对应一个"变了就会让 R-01 结论失效"的机制点。A6 尤其重要——它是"看门狗为什么必须自己实现"的证据。
+自检里有七条锚点，每条对着一个「一旦变了就说明机制被动过」的位置。它们是源码层的断言，不是行为断言。
 
-## 六、实测结果
+**为什么需要**：行为测试可能因为巧合通过，锚点不会。改了关键行，锚点立刻报。
 
-见 `evidence/rt-sc-report.md`。摘要：
+## 自检的退出码
 
-| 判据 | 结果 |
+| 退出码 | 含义 |
 | --- | --- |
-| J3-1 exit 0 无漂移 + 空转不误报 | ✅ |
-| J3-2 exit 1 人为漂移必红 | ✅ |
-| J3-3 exit 2 环境不可用不误判 | ✅ |
-| J3-4 外置版与硬编码版行为等价 | ✅（A/B 组同形） |
-| J3-5 规则写错 → exit 2 → deny，不静默放行 | ✅（D 组） |
-| **J3-6 规则源单一性** | ✅（导出前红、导出后绿、手改红、改规则不导出红） |
-| **J3-7 三态各一份日志** | ✅（exit0 / exit1-red / exit2-envbroken） |
+| `0` | 九项全过 |
+| `1` | 有 `error`（规则非法、段结构损坏等） |
+| `2` | 环境不可用（源码根不存在、Node 版本过低、规则文件缺失或非法 JSON、`AGENTS.md` 不存在） |
 
-## 七、不变式（从件 1 继承，不可破）
+退出码 `2` 与 `1` 分开是有意的：`1` 是「你配置有问题」，`2` 是「环境不满足，没法判」。混在一起会让人误以为自己的规则写错了。
 
-1. **任何异常路径必须 `exit 2`（deny），绝不 `exit 0`**
-2. **不要 `unref` 定时器**（否则 exit 0 + 空输出 = 静默丢弃）
-3. 规则文件坏了 → 立即 `exit 2` → deny
-4. 模块加载失败也必须 `exit 2`（已加 `uncaughtException`/`unhandledRejection` 兜底）
-5. abstain 必须是**显式合法 JSON + 无 decision + 带标记**，不能靠"不输出"
+## 不变式（改动时不能破的）
 
-## 八、回滚
+1. **hook 出错必须 fail-closed**。任何未捕获异常都落成 `exit 2` → deny，不能是 `exit 1`（产品侧会当成「非 0 非 2」的失败，行为未定义）。
+2. **规则源是唯一权威**。`AGENTS.md` 里的段是投影视图，不是第二份数据。
+3. **段外内容一个字不动**。定位靠哨兵标记，只替换标记之间的内容。
+4. **恢复空规则后文件字节会变**。`rules_write` 会规范化（补 `description: ""`、键序排序），所以判断恢复成功要用**语义等价**，不能用字节相等。
 
-```powershell
-Remove-Item docs\zcode-mod\selfcheck -Recurse -Force
-Remove-Item docs\zcode-mod\evidence\rt-sc-* -Force
-Remove-Item docs\zcode-mod\evidence\tools\rt-selfcheck -Recurse -Force
-Remove-Item .zhll\rt\selfcheck -Recurse -Force
-Remove-Item .zhll\rt\selfcheck-behavior -Recurse -Force
+## 怎么自己跑
+
+```pwsh
+# 从仓库根目录
+node docs/selfcheck/selfcheck.mjs --root <被测插件根> --data <数据目录> --agents <AGENTS.md 路径>
 ```
-- 全部新增文件；不安装、不默认开启、不写用户真实配置
-- 四组行为实验 + 三态自检均只读真实目录或写隔离副本
+
+输出每项 `level=… id=… message=…`，最后一行是汇总。
+
+想看每项的具体输出而不想过校验逻辑，用探针：
+
+```pwsh
+node scripts/probe-selfcheck.mjs <dataDir> <agentsPath> <configPath>
+```
+
+## 这份实现证明了什么、没证明什么
+
+**证明了**：规则外置可行、hook 三态可表达且可区分、段投影幂等、自检能覆盖九项、空规则时行为不变。
+
+**没证明**：
+- 面板 GUI 行为（那是插件本体的事，见 [`../VERIFICATION.md`](../VERIFICATION.md)）
+- `guarded` 档位与 `-p` 无人值守面（产品能力边界，见 [`../VERIFICATION.md`](../VERIFICATION.md) 第十节）
+- macOS / Linux 上的实际行为（CI 三平台绿只是间接证据）
+
+要复跑插件本体的判据，看 [`../REPRODUCE.md`](../REPRODUCE.md)。

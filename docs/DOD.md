@@ -1,31 +1,68 @@
-# 验收判据逐条核销（DoD）
+# 验收判据逐条核销
 
-> 这是本插件的**验收判据表**与逐条结论。每条都指向**可复跑的证据**（命令或日志），第三方可用 [`REPRODUCE.md`](REPRODUCE.md) 的入口自己复跑。
-> 判据原文出自 ZCode 客户端改造项目 ROADMAP §四（DoD D-1..D-10）。
+这份文档回答一个问题：**当初定下的十条验收标准，每一条到底满足了没有？**
 
-## 核销总表
+十条判据（D-1 到 D-10）出自 ZCode 客户端改造项目的路线图。这里逐条给结论，每条都指向**能自己跑一遍的证据**——入口在 [`REPRODUCE.md`](REPRODUCE.md)。验证过程与未覆盖范围在 [`VERIFICATION.md`](VERIFICATION.md)。
 
-| DoD | 判据 | 结论 | 证据（可复跑） |
+先说读法：**结论都是「满足」，但有四条的口径需要说明**——不是判据没满足，是判据的措辞与实际能达到的验证方式有差异。那四条单独标了「口径说明」，建议先看那部分，否则容易误读成「全都完美通过」。
+
+## 十条判据的核销结果
+
+| 判据 | 要求什么 | 结论 | 证据 |
 | --- | --- | --- | --- |
-| **D-1** | GitHub 市场源添加→列表出现→一键安装成功 | ✅ | `plugins marketplace add` → `Added marketplace … (1 plugins)`；`plugins install` → `Installed plugin zcode-rules@<market> (0.4.1) [enabled]`；`plugins list --verbose` → `hooks: 1` + `mcp: plugin:zcode-rules:zcode-rules`。**并从公开远端真 clone 演练过整条全新机器剧本**（见 REPRODUCE §一） |
-| **D-2** | 空规则+空策略下会话行为与未装一致（abstain 实证），面板首屏/README 首行写明 | ✅ | 空规则时 hook 输出 `{"hookSpecificOutput":{"hookEventName":"PermissionRequest"},"systemMessage":"zcode-rules: abstain (no rule matched, unmatched=abstain (产品原行为))"}` —— **不产出 decision**，不改变产品判定；面板首屏与 README 首行均写明「零行为变化」 |
-| **D-3** | 面板写第一条 allow 规则→新会话命中不弹窗且执行（permission.resolved 证据） | ✅ | 真会话日志 `tool.permission.resolved`：`decision=allow`、`reason=Allowed by PermissionRequest hook`（客户端被故意延迟 8s 答 deny，仍由 hook 抢先放行；**对照组**：禁用插件后同配置不执行） |
-| **D-4** | 内容策略保存→请求体含 `zcode-content-policy` 段 marker | ✅ | 经 MCP `exportAgents`（= 面板「保存策略」同一入口）投影后，`AGENTS.md` 含 `BEGIN zcode-content-policy` / 段内策略正文 / `END zcode-content-policy`，且 rules 段未被破坏 |
-| **D-5** | 手改 AGENTS.md 段→「运行检查」提示不覆盖 | ✅ | 手改段内文字 → 自检 `policy-section = warn`（「可能被手改，或策略改了没重新导出」），且**文件字节未被改动**；点「用真源覆盖」后逐字节回基线，自检转 `ok` |
-| **D-6** | 卸载后 cache/installed/enabledPlugins 清净 + AGENTS.md sha 不变 | ✅（口径见下） | 三处清净：cache 下该插件**文件数 0**、`installed_plugins.json` 无该 id、`enabledPlugins` 无该 id；`export-agents --uninstall` **逐字节**回装前状态（**必须带 `--state`**，否则 exit 2） |
-| **D-7** | 换 plugin version 重装真源保留、投影幂等；ZCode 升级后自检三态可判 | ✅ | 前半：v0.4.0 → v0.4.1 **真实升级**（带实质变更：新增自检项 `data-dir`）—— `rules.json` / `content-policy.json` **字节不变**、`AGENTS.md` 重投影 sha 不变、自检含新项且 `version=v0.4.1`、产物逐文件指纹一致。后半：自检**三态**各自可触发且可区分（正常 `errors=0` / 手改段 `warn` / 非法规则 `error` 且 `summary.errors≥1`） |
-| **D-8** | 全程 `C:\Program Files\ZCode` 文件 mtime 不变 | ✅ | 逐文件（相对路径 + size + mtimeMs）聚合 digest，升级前后**完全一致**。**口径说明**：ROADMAP 写的 1410 是当时快照数，实测 1433 —— 判据以「逐文件 digest 前后一致」为准 |
-| **D-9** | 公开仓库含 LICENSE/README/CHANGELOG/tag，CI 绿 | ✅ | 本仓（PUBLIC / MIT / main / 描述 / 6 个 tag）；CI **三平台矩阵**：ubuntu + macos + windows × Node 24，每个平台都是「保真 exit 0 + 文档 exit 0 + **pass 173 / fail 0**」 |
-| **D-10** | 全部证据日志的 repro 命令指向仓库内文件，第三方可复现 | ✅（实质满足） | 历史门禁日志**原样保留**（改写历史 = 伪造证据）；改为提供本仓的复跑入口：`REPRODUCE.md`（逐条判据 → 仓库内可复跑文件/命令）+ `../scripts/proof/` 三份路径全环境变量化的判据驱动 + `../scripts/tools-list-probe.mjs`（stdio MCP 可靠探针） |
+| **D-1** | 添加 GitHub 市场源 → 列表出现 → 一键安装成功 | ✅ | `marketplace add` 输出 `Added marketplace zcode-rules-plugin (N plugins)`；`install` 输出 `Installed plugin … (0.4.1) [enabled]`；`list --verbose` 显示 `hooks: 1` + `mcp`。另外从公开远端真 clone 跑过一整套「全新机器」剧本。复跑见 REPRODUCE 第一节 |
+| **D-2** | 空规则 + 空策略时，行为与未装一致；面板与 README 首屏写明 | ✅ | 空规则时 hook 输出显式 abstain（**不含 `decision` 字段**），不改变产品判定。面板首屏与 README 都写了「零行为变化」 |
+| **D-3** | 面板写一条 allow 规则 → 新会话命中不弹窗且执行 | ✅ | 真会话日志 `tool.permission.resolved`：`decision=allow`、`reason=Allowed by PermissionRequest hook`。**注意**：写入动作是直接写 `rules.json`，不是经面板点击——见下方口径说明 ① |
+| **D-4** | 内容策略保存后，请求体含 `zcode-content-policy` 段标记 | ✅ | 经 MCP `exportAgents`（面板「保存策略」走的同一入口）投影后，`AGENTS.md` 含起止标记与策略正文。**注意**：验证的是「文件含标记」，不是「抓到真实请求负载」——见口径说明 ② |
+| **D-5** | 手改 `AGENTS.md` 段 → 运行检查提示但不覆盖 | ✅ | 手改段内文字 → 自检报 `policy-section = warn`，且**文件字节未变**；点「用真源覆盖」后逐字节回基线、自检转 `ok` |
+| **D-6** | 卸载后三处注册清净 + `AGENTS.md` 的 sha 不变 | ✅ | 三处清净：cache 下文件数 0、`installed_plugins.json` 无该 id、`enabledPlugins` 无该 id；`export-agents --uninstall` 逐字节回到装前。**注意**：产品卸载本身不摘段——见口径说明 ③ |
+| **D-7** | 换版本重装真源保留、投影幂等；升级后自检三态可判 | ✅ | v0.4.0 → v0.4.1 真实升级（带实质代码变更：新增第九项自检 `data-dir`）。真源字节不变、`AGENTS.md` 重投影 sha 不变、产物逐文件摘要一致、hook 仍工作。三态（`ok` / `warn` / `error`）各自可触发且可区分 |
+| **D-8** | 全程 `C:\Program Files\ZCode` 的文件 mtime 不变 | ✅ | 1433 个文件逐个记录「相对路径 + size + mtimeMs」并聚合，升级前后完全一致 |
+| **D-9** | 公开仓库含 LICENSE / README / CHANGELOG / tag，CI 绿 | ✅ | 仓库 PUBLIC / MIT / main 分支 / 6 个 tag；CI 三平台矩阵（ubuntu + macos + windows，各 Node 24），每平台三步都 exit 0 |
+| **D-10** | 所有证据日志的复跑命令指向仓库内文件，第三方可复现 | ✅ | 历史门禁日志原样保留（改历史等于伪造证据）。改为在本仓库提供复跑入口：`REPRODUCE.md` 逐条映射 + `../scripts/proof/` 三份路径全环境变量化的驱动 + `../scripts/tools-list-probe.mjs`。**注意**：历史日志里的本机路径是历史事实——见口径说明 ④ |
 
-## 三条「口径澄清」（产品边界，不是缺陷）
+## 四条口径说明
 
-1. **产品卸载不摘 `AGENTS.md` 的段** —— 卸载只清插件自身注册；段仍会注入模型上下文，**需用户自己删**（D-6）。
-2. **规则只对「会被询问的命令」起作用** —— 产品有只读命令白名单（**74 个**，由 46 个任意参数命令 + 49 个策略命令去重而来；另有 `docker images`/`docker ps` 前缀与 git/gh 多词子命令），走免询问路径，hook 没有参与机会（D-2 相关，完整清单见 REPRODUCE §三）。
-3. **`plugins install` 对已装 id 是原地升级** —— 「卸载会删数据目录」是 **uninstall** 的语义；两者不要混为一谈（D-7）。
+这四条不是「没做到」，是**判据的字面要求与实际验证方式有落差**，必须写清楚，否则读的人会高估证据强度。
 
-## 未覆盖范围
+### ① D-3：写入动作没走面板
 
-本插件**没有**覆盖的能力边界与验证缺口，逐条列在 [`VERIFICATION.md`](VERIFICATION.md) 的「本插件没有覆盖的范围」一节（产品边界 4 条 + 验证覆盖不足 3 条）。此处不复述，避免两处维护同一份清单而漂移。
+判据写的是「面板写第一条 allow 规则」，实际验证时是**直接写 `rules.json` 文件**，没有点面板的保存按钮。
 
-详细结论与每条的验证方式见 [`VERIFICATION.md`](VERIFICATION.md)；复跑入口见 [`REPRODUCE.md`](REPRODUCE.md)。
+**影响**：证明了「规则就位后 hook 会放行」，**没有**证明「面板点保存能写入」。后者由另外两条覆盖——面板链路在真实宿主验证过（[`VERIFICATION.md`](VERIFICATION.md) 第三节），面板写入路径另行验证过（真 MCP 工具往返）。但严格按 D-3 字面，这一环是拼起来的，不是一条链跑通的。
+
+### ② D-4：验证的是文件，不是请求体
+
+判据写的是「请求体含 `zcode-content-policy` 段 marker」，实际验证的是「`AGENTS.md` 文件含该标记」。
+
+**为什么这算够**：产品只从 `AGENTS.md` 读会话上下文（源码 `DEFAULT_PRIORITY_FILES = ["AGENTS.md"]`），文件含标记是请求体含标记的**必要环节**。面板自己的文案也印证了这条链路：「保存后对新会话生效：`AGENTS.md` 是会话开始时的上下文」。
+
+**但严格说**：没有抓到真实请求负载，所以只能算间接验证。如果哪天产品改了上下文的来源，这条结论会失效。
+
+### ③ D-6：sha 不变只在「卸载后手动摘段」时成立
+
+判据把「三处注册清净」和「`AGENTS.md` 的 sha 不变」并列。实际上**产品卸载不摘 `AGENTS.md` 的段**——卸载只清插件自身注册，段还留着。
+
+**所以**：「sha 不变」是在「卸载后你再手工删掉那两个段」的前提下成立。这是产品的既定设计，不是插件缺陷，但判据原文没写这一层。
+
+### ④ D-10：历史日志保留原机路径
+
+判据要求「所有证据日志的复跑命令指向仓库内文件」。历史门禁日志里保留的是**当时的本机绝对路径**（`C:\Users\Administrator\...`），没有改成仓库相对路径。
+
+**为什么不改**：那些日志是历史事实的记录，改写它们等于伪造证据。
+
+**改为提供的补偿**：在仓库内新增复跑入口——`REPRODUCE.md` 把每条判据映射到仓库内可运行的文件或命令；`../scripts/proof/` 下三份驱动全部支持环境变量覆盖路径。第三方不需要那批历史日志也能复现结论。
+
+## 三条容易被误读为缺陷的产品行为
+
+这三条在 [`VERIFICATION.md`](VERIFICATION.md) 第七节也列了，这里重复一次，因为它们直接影响怎么理解上面四条判据。
+
+1. **产品卸载不摘 `AGENTS.md` 的段** —— 卸载只清插件自身注册。段仍在文件里，仍会注入模型上下文，**需用户自己删**。
+2. **规则只对「会被询问的命令」起作用** —— 产品有只读命令白名单（74 个，由 46 个任意参数命令 + 49 个策略命令去重而来；另有 `docker images` / `docker ps` 两个前缀与 git/gh 的多词子命令）。这些命令走免询问路径，**不进权限询问环节，hook 没有出场机会**。给它们写规则等于白写。
+3. **`plugins install` 对已装 id 是原地升级** —— 「卸载会删数据目录」是 **uninstall** 的语义。两者不能混：升级用 `install`，数据不动；卸载用 `uninstall`，数据会丢。
+
+## 没覆盖的范围
+
+能力边界与验证缺口的完整清单在 [`VERIFICATION.md`](VERIFICATION.md) 第十节（产品边界 4 条 + 本项目没做到 3 条）。此处不复述——两处维护同一份清单必然漂移。
+
+要自己跑一遍这些判据，按 [`REPRODUCE.md`](REPRODUCE.md) 的入口；每条判据的验证过程与证据强度，看 [`VERIFICATION.md`](VERIFICATION.md)。
