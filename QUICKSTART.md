@@ -1,74 +1,177 @@
 # QUICKSTART
 
-> 一页纸：装上、写第一条规则、知道面板在哪、卸载干净、遇到坑怎么办。
-> 完整文档见 [README.md](README.md)。
+装到能用，一页纸。第一次装想先搞懂「这份规则源、hook、投影是怎么回事」，看 [README.md](README.md) 的前两节再回来。
 
-## 1. 装（3 步）
+这一份只讲四件事：**怎么装、第一条规则怎么写、面板在哪、出问题怎么查**。
+
+## 一、装
+
+三条命令。市场源（插件市场的来源地址）只需添加一次；以后重装或升级都不用再添加。
 
 ```pwsh
 # <CLI> = C:\Program Files\ZCode\resources\glm\zcode.cjs
 
-# ① 添加本仓库为市场源（从 GitHub 直读）
-node <CLI> plugins marketplace add wufeng0105/zcode-rules-plugin  # 期望：Added marketplace zcode-rules-plugin (N plugins)
+# ① 把本仓库添加到市场源（从 GitHub 直读）
+node <CLI> plugins marketplace add wufeng0105/zcode-rules-plugin
+#    期望：Added marketplace zcode-rules-plugin (N plugins)
+
 # ② 安装
-node <CLI> plugins install zcode-rules@zcode-rules-plugin          # 期望：Installed … (0.4.1) [enabled]
-# ③ 确认
-node <CLI> plugins list --verbose                                   # 期望含 hooks: 1 与 mcp: plugin:zcode-rules:zcode-rules
+node <CLI> plugins install zcode-rules@zcode-rules-plugin
+#    期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.1) [enabled]
+
+# ③ 确认 hook 与 MCP 都挂上了
+node <CLI> plugins list --verbose
+#    期望：zcode-rules@zcode-rules-plugin … hooks: 1, mcp: plugin:zcode-rules:zcode-rules
 ```
 
-装完**重启 ZCode**，面板才会出现。
+**装完必须重启 ZCode。** 不重启的话 `plugins list` 已经显示 `[enabled]`，但面板就是打不开，容易误判成没装成。
 
-## 2. 第一条规则（3 步）
+## 二、第一条规则
 
-1. 打开会话 → <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>B</kbd> → 「插件市场」→ **ZCode 规则** 卡片右上「打开」
-2. 「规则表」页 → 编辑 JSON：把 `"rules": []` 改成
-   ```json
-   "rules": [{ "id": "allow-echo", "tool": "Bash", "commandPattern": "^echo hello$", "decision": "allow" }]
-   ```
-3. 点「保存规则（写入 → 导出 → 自检）」→ 下方出现三行日志（写入 / 导出 / 自检）
+### 先选对被测命令
 
-内容策略：在「内容策略」页写自由文本 → 「保存策略（写入 → 导出）」。**对新会话生效**。
+这一步最容易错，先说清楚。
 
-## 3. 面板在哪（别再找错）
+ZCode 对一批**只读命令**不询问——直接放行，不弹窗。`ls`、`cat`、`echo`、`grep`、`find`、`rg`、`jq`、`head`、`tail`、`wc`、`ps`、`pwd` 都在里面，一共 **74 个**。
 
-| 想找 | 在哪 |
+既然不询问，就**不会调用 hook**，你给它们写规则等于白写。
+
+要用**确实会被询问**的命令做实验：`touch`、`rm`、`npm --version`、`git -C <目录> status`。
+
+下面统一用 `touch`。
+
+### 写进去
+
+1. 打开 ZCode 会话 → 按 <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>B</kbd> → 侧栏「插件市场」→ **ZCode 规则** 卡片右上角「打开」
+2. 切到「规则表」屏 → 在编辑框里把 `"rules": []` 换成：
+
+```json
+"rules": [
+  {
+    "id": "allow-touch-test",
+    "tool": "Bash",
+    "commandPattern": "^touch .*test\\.tmp$",
+    "decision": "allow",
+    "comment": "创建 .tmp 测试文件，可回滚"
+  }
+]
+```
+
+3. 点「**保存规则（写入 → 投影 → 自检）**」。下方会出现三行日志：写入成功、投影成功、自检无 error。
+
+### 验证它真的生效
+
+让模型跑一条会命中的命令，比如 `touch check-test.tmp`。
+
+- **生效了**：不弹窗，文件直接出现
+- **没生效**：还会弹窗问你要不要允许
+
+如果没生效，跳到本文第四节。
+
+## 三、面板在哪（三个入口中只有一个能走通）
+
+**唯一正确的入口**：会话内按 <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>B</kbd> → 侧栏「插件市场」→ **ZCode 规则** 卡片右上角「**打开**」。
+
+另外三个看着像入口、实际走不通：
+
+| 你可能会点的 | 实际行为 |
 | --- | --- |
-| 规则表 / 内容策略输入框 / 自检 | **侧边面板**：会话内 `Ctrl+Alt+B` → 插件市场 → 卡片右上「打开」 |
-| 启用开关 / 看门狗秒数 | 插件详情页「配置」区（只有这两项，是产品原生控件） |
-| 规则没生效时看诊断 | 面板「自检与版本」页 → 「运行检查」 |
+| 卡片上的「立即试用」 | 只把示例提示词预填进新会话，**不打开面板** |
+| 「应用插件」推荐区 | 只列官方插件，找不到本插件 |
+| 插件详情页的「配置」 | 只有「启用规则」和「看门狗秒数」两个原生控件，没有规则表和策略输入框 |
 
-**三个走不通的入口**：「立即试用」（只预填提示词）、「应用插件」推荐区（只列官方插件）、详情页「配置」（只有两项）。
+四个屏各自管什么：
 
-## 4. 卸载干净（3 步）
+| 屏 | 用途 |
+| --- | --- |
+| 状态 | 插件是否启用、规则几条、策略空不空、上次自检结果 |
+| 规则表 | 编辑规则 JSON 并保存 |
+| 内容策略 | 写自由文本，投影给模型读 |
+| 自检与版本 | 九项检查，出问题时看这里 |
+
+## 四、出问题怎么查
+
+### 规则不生效
+
+按这个顺序排查，前两个占了绝大多数。
+
+**第一步，确认这条命令会不会被询问。** 用只读白名单里的命令（`echo`、`ls`、`cat` 等）做实验是查不出问题的——它们根本不进权限询问环节。换成 `touch`、`rm` 再试。
+
+**第二步，检查正则转义。** `commandPattern` 是正则表达式。在 `rules.json` 这个 JSON 文件里，反斜杠要写两个：
+
+| 要匹配 | JSON 里写 | 落进规则源是 |
+| --- | --- | --- |
+| 字面点号 `.` | `"\\."` | `\.` |
+| 任意字符 | `"."` | `.` |
+
+写成 `"\\\\."`，落进去就是 `\\.`——意思是「反斜杠 + 任意字符」，永远命中不了。
+
+在面板的编辑框里直接写 `\.` 就行，面板会负责转义。
+
+**第三步，确认锚点和实际命令形态匹配。** 你看到的是 `touch x.tmp`，但传给 hook 的可能是带引号的绝对路径 `touch "C:/path/x.tmp"`。用 `^touch$` 匹配不上，改成 `touch .*` 这类宽松写法。
+
+### 自查九项
+
+面板 →「自检与版本」→ 点「运行检查」。九项分别是：数据目录、规则合法、策略状态、配置无手工接线、`AGENTS.md` 存在、`AGENTS.md` 尺寸、`rules` 段投影一致、`policy` 段投影一致、版本一致。
+
+任意一项不是 `ok`，就按它的提示处理。
+
+### 策略保存了但当前会话没变
+
+这是正常的。`AGENTS.md` 是**会话开始时**读入上下文的，当前会话已经加载的文字不会因为这次保存而改变。**开新会话**才生效。
+
+### 手改了 `AGENTS.md` 里的段
+
+自检会报 `warn`，但**不会覆盖你的改动**。面板顶上会出现两个按钮，由你决定以哪边为准：
+
+- 「用真源覆盖 `AGENTS.md`」——以规则源为准
+- 「从 `AGENTS.md` 回填真源」——以你手改的内容为准
+
+### 升级后旧面板标签报 `ENOENT`
+
+关掉那个标签重新打开，或者重启 ZCode。原因是资源路径里带了版本号，旧标签还指着旧路径。
+
+## 五、升级与卸载
+
+### 升级
 
 ```pwsh
-# ① 先备份规则与策略（卸载会删数据目录）
+node <CLI> plugins install zcode-rules@zcode-rules-plugin
+```
+
+`plugins install` 对已装的同 id 插件是**原地升级**：规则和策略都不动。
+
+**不要先 `uninstall` 再装。** 卸载会删掉插件的数据目录，你的规则和策略会一起丢。
+
+### 卸载干净（三步）
+
+```pwsh
+# ① 先备份（卸载会删数据目录）
 Copy-Item -Recurse "$HOME\.zcode\cli\plugins\data\zcode-rules@zcode-rules-plugin" "$HOME\zcode-rules-backup"
+
 # ② 卸载
 node <CLI> plugins uninstall zcode-rules@zcode-rules-plugin --force
-# ③ 手工删掉 AGENTS.md 里的两个段（产品卸载不摘段）：
-#    <!-- BEGIN zcode-rules … --> … <!-- END zcode-rules -->
-#    <!-- BEGIN zcode-content-policy … --> … <!-- END zcode-content-policy -->
 ```
 
-## 5. 自查（1 条命令）
+**③ 手工删掉 `AGENTS.md` 里的两个段**——产品卸载只清插件自身注册，这两段会留在文件里继续注入模型上下文：
 
-面板 → 「自检与版本」→ 「运行检查」：九项（数据目录 / 规则合法 / 策略状态 / 配置无手工接线 / `AGENTS.md` 存在 / 尺寸 / 两段投影一致 / 版本一致）。
+```
+<!-- BEGIN zcode-rules … -->    …    <!-- END zcode-rules -->
+<!-- BEGIN zcode-content-policy … -->    …    <!-- END zcode-content-policy -->
+```
 
-## 6. 常见坑（5 条）
-
-1. **升级别先卸载**——`uninstall` 会删数据目录（规则与策略会丢）。直接 `plugins install` 同 id 重装即可，数据不动。
-2. **升级后旧面板标签报 `ENOENT`**——关掉标签重开，或重启 ZCode（资源路径含版本号）。
-3. **规则不生效**——`commandPattern` 是正则且 first-match-wins；不命中就是 abstain（交回 ZCode 原逻辑）。
-4. **策略保存后当前会话没变**——`AGENTS.md` 是会话开始时的上下文，新会话才读到。
-5. **手改 `AGENTS.md` 段不会被覆盖**——自检只报 `warn`，由你点「用真源覆盖」或「从 AGENTS.md 回填真源」决定。
-
-## 7. 开发
+## 六、开发这个插件
 
 ```pwsh
-node scripts/verify-fidelity.mjs   # 4 个参照实现逐字节保真
-node scripts/check-docs.mjs        # 文档链接检查
-node --test tests/                 # 零依赖测试
+node scripts/verify-fidelity.mjs   # 4 个参照实现逐字节保真（含副本 ≡ 原件）
+node scripts/check-docs.mjs        # 文档相对链接与仓库内路径检查
+node --test tests/                 # 175 例，零依赖、离线可跑
 ```
+
+三条都不需要 `npm install`。CI 跑的就是这三步，三平台（ubuntu / macos / windows）各一遍。
+
+改动流程与红线见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+---
 
 MIT 许可，见 [LICENSE](LICENSE)。
