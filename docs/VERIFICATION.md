@@ -103,13 +103,13 @@ hook 与客户端权限应答**并行**执行，hook 先给出决策即生效。
 
 ## 九、CI 回归防线
 
-GitHub Actions（ubuntu-latest + Node 24，零依赖安装）跑三步：
+GitHub Actions（**三平台矩阵**：ubuntu-latest / macos-latest / windows-latest，各 Node 24，零依赖安装）跑三步：
 
 | 步骤 | 作用 |
 | --- | --- |
 | `node scripts/verify-fidelity.mjs` | 四个参照实现逐字节保真 |
 | `node scripts/check-docs.mjs` | 文档相对链接与仓库内路径引用存在 |
-| `node --test tests/` | 169 例（含两个校验脚本的**红绿双向**用例） |
+| `node --test tests/` | **175 例**（含两个校验脚本的**红绿双向**用例） |
 
 CI 是**回归防线**，不是运行期证据源 —— 运行期判据需要真实 ZCode 安装与 GUI 环境，只能在本地跑（隔离配方见 `isolation/RECIPE.md`）。
 
