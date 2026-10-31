@@ -90,4 +90,4 @@
 - **内容策略不是沙箱**。它给模型读，不是强制约束。真正强制的是 hook 的 allow/deny。
 - **本插件不能保护其他插件或 ZCode 自身的行为**，只对自己的规则判定负责。
 
-这些限制在 [`docs/VERIFICATION.md`](docs/VERIFICATION.md) 第十节也有记录，那里还列了本项目没做到的验证缺口。
+这些限制在 [`docs/VERIFICATION.md`](docs/VERIFICATION.md) 的「这个插件没覆盖的范围」一节也有记录，那里还列了本项目没做到的验证缺口。

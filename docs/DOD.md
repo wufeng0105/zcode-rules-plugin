@@ -10,7 +10,7 @@
 
 | 判据 | 要求什么 | 结论 | 证据 |
 | --- | --- | --- | --- |
-| **D-1** | 添加 GitHub 市场源 → 列表出现 → 一键安装成功 | ✅ | `marketplace add` 输出 `Added marketplace zcode-rules-plugin (N plugins)`；`install` 输出 `Installed plugin … (0.4.1) [enabled]`；`list --verbose` 显示 `hooks: 1` + `mcp`。另外从公开远端真 clone 跑过一整套「全新机器」剧本。复跑见 REPRODUCE 第一节 |
+| **D-1** | 添加 GitHub 市场源 → 列表出现 → 一键安装成功 | ✅ | `marketplace add` 输出 `Added marketplace zcode-rules-plugin (N plugins)`；`install` 输出 `Installed plugin … (0.4.1) [enabled]`；`list --verbose` 显示 `hooks: 1` + `mcp`。另外从公开远端真 clone 跑过一整套「全新机器」剧本。复跑见 [`REPRODUCE.md`](REPRODUCE.md) 的「先把环境准备好」一节 |
 | **D-2** | 空规则 + 空策略时，行为与未装一致；面板与 README 首屏写明 | ✅ | 空规则时 hook 输出显式 abstain（**不含 `decision` 字段**），不改变产品判定。面板首屏与 README 都写了「零行为变化」 |
 | **D-3** | 面板写一条 allow 规则 → 新会话命中不弹窗且执行 | ✅ | 真会话日志 `tool.permission.resolved`：`decision=allow`、`reason=Allowed by PermissionRequest hook`。**注意**：写入动作是直接写 `rules.json`，不是经面板点击——见下方口径说明 ① |
 | **D-4** | 内容策略保存后，请求体含 `zcode-content-policy` 段标记 | ✅ | 经 MCP `exportAgents`（面板「保存策略」走的同一入口）投影后，`AGENTS.md` 含起止标记与策略正文。**注意**：验证的是「文件含标记」，不是「抓到真实请求负载」——见口径说明 ② |
@@ -29,7 +29,7 @@
 
 判据写的是「面板写第一条 allow 规则」，实际验证时是**直接写 `rules.json` 文件**，没有点面板的保存按钮。
 
-**影响**：证明了「规则就位后 hook 会放行」，**没有**证明「面板点保存能写入」。后者由另外两条覆盖——面板链路在真实宿主验证过（[`VERIFICATION.md`](VERIFICATION.md) 第三节），面板写入路径另行验证过（真 MCP 工具往返）。但严格按 D-3 字面，这一环是拼起来的，不是一条链跑通的。
+**影响**：证明了「规则就位后 hook 会放行」，**没有**证明「面板点保存能写入」。后者由另外两条覆盖——面板链路在真实宿主验证过（[`VERIFICATION.md`](VERIFICATION.md) 的「面板链路在真实宿主里验证过」一节），面板写入路径另行验证过（真 MCP 工具往返）。但严格按 D-3 字面，这一环是拼起来的，不是一条链跑通的。
 
 ### ② D-4：验证的是文件，不是请求体
 
@@ -55,7 +55,7 @@
 
 ## 三条容易被误读为缺陷的产品行为
 
-这三条在 [`VERIFICATION.md`](VERIFICATION.md) 第七节也列了，这里重复一次，因为它们直接影响怎么理解上面四条判据。
+这三条在 [`VERIFICATION.md`](VERIFICATION.md) 的「四条使用时的契约边界」一节也列了，这里重复一次，因为它们直接影响怎么理解上面四条判据。
 
 1. **产品卸载不摘 `AGENTS.md` 的段** —— 卸载只清插件自身注册。段仍在文件里，仍会注入模型上下文，**需用户自己删**。
 2. **规则只对「会被询问的命令」起作用** —— 产品有只读命令白名单（74 个，由 46 个任意参数命令 + 49 个策略命令去重而来；另有 `docker images` / `docker ps` 两个前缀与 git/gh 的多词子命令）。这些命令走免询问路径，**不进权限询问环节，hook 没有出场机会**。给它们写规则等于白写。
@@ -63,6 +63,6 @@
 
 ## 没覆盖的范围
 
-能力边界与验证缺口的完整清单在 [`VERIFICATION.md`](VERIFICATION.md) 第十节（产品边界 4 条 + 本项目没做到 3 条）。此处不复述——两处维护同一份清单必然漂移。
+能力边界与验证缺口的完整清单在 [`VERIFICATION.md`](VERIFICATION.md) 的「这个插件没覆盖的范围」一节（产品边界 4 条 + 本项目没做到 3 条）。此处不复述——两处维护同一份清单必然漂移。
 
 要自己跑一遍这些判据，按 [`REPRODUCE.md`](REPRODUCE.md) 的入口；每条判据的验证过程与证据强度，看 [`VERIFICATION.md`](VERIFICATION.md)。

@@ -14,11 +14,11 @@
 | `rules/agents-section.mjs` | **参照实现** | 哨兵段的定位、幂等 upsert、摘除 |
 | `rules/export-agents.mjs` | **参照实现** | 导出与卸载 CLI |
 | `hooks/permission-rules.mjs` | **参照实现** | 三态判定 + 看门狗 |
-| `selfcheck.mjs` | **参照实现** | 一条命令跑完九项自检 |
+| `selfcheck.mjs` | **参照实现** | 一条命令核完七条源码锚点（`A1`–`A7`） |
 | `rules/template-empty.json` | 参考数据 | 空模板，安装时不写入 |
 | `rules/example-lowrisk.json` | 参考数据 | 语法示例，安装时不写入 |
 
-前五个文件与 `src/` 下的同名文件**逐字节相同**，由 `../../scripts/verify-fidelity.mjs` 保证。注意 `selfcheck.mjs` 例外：它**没有** `src/` 对应物（那九个自检项在插件里由 `../../src/mcp/operations.mjs` 实现），所以它是本目录独有的脚本，不参与副本一致性校验。
+前五个文件与 `src/` 下的同名文件**逐字节相同**，由 `../../scripts/verify-fidelity.mjs` 保证。注意 `selfcheck.mjs` 例外：它**没有** `src/` 对应物（插件运行期的「运行检查」由 `../../src/mcp/operations.mjs` 实现，当前十项；两件事别混），所以它是本目录独有的脚本，不参与副本一致性校验。
 
 ## 为什么会有两份
 
@@ -29,9 +29,9 @@
 
 代价是要维护两份副本。所以校验脚本除了比对 sha256 基线，还会比对「副本 ≡ 原件」——副本漂移不会无声发生。
 
-## 九项自检是怎么设计的
+## 参照自检脚本在核什么
 
-插件面板的「运行检查」，底层就是这九项。设计上有三条原则。
+先分清两件事：**插件面板的「运行检查」**跑的是插件 MCP 的十项自检（见 [`../VERIFICATION.md`](../VERIFICATION.md) 的「自检十项」一节），**不是**这个脚本；**这个脚本**核的是七条源码锚点。下面三条原则是两边共同的设计前提。
 
 ### 原则一：`unmatched` 与 `onTimeout` 是正交的两件事
 
@@ -70,7 +70,7 @@ hook 有三种结局，输出形态必须让人从日志上就能分辨：
 
 | 退出码 | 含义 |
 | --- | --- |
-| `0` | 九项全过 |
+| `0` | 全部锚点核过（`A1`–`A7`） |
 | `1` | 有 `error`（规则非法、段结构损坏等） |
 | `2` | 环境不可用（源码根不存在、Node 版本过低、规则文件缺失或非法 JSON、`AGENTS.md` 不存在） |
 
@@ -100,11 +100,11 @@ node scripts/probe-selfcheck.mjs <dataDir> <agentsPath> <configPath>
 
 ## 这份实现证明了什么、没证明什么
 
-**证明了**：规则外置可行、hook 三态可表达且可区分、段投影幂等、自检能覆盖九项、空规则时行为不变。
+**证明了**：规则外置可行、hook 三态可表达且可区分、段投影幂等、插件运行自检能覆盖十项、空规则时行为不变。
 
 **没证明**：
 - 面板 GUI 行为（那是插件本体的事，见 [`../VERIFICATION.md`](../VERIFICATION.md)）
-- `guarded` 档位与 `-p` 无人值守面（产品能力边界，见 [`../VERIFICATION.md`](../VERIFICATION.md) 第十节）
+- `guarded` 档位与 `-p` 无人值守面（产品能力边界，见 [`../VERIFICATION.md`](../VERIFICATION.md) 的「这个插件没覆盖的范围」一节）
 - macOS / Linux 上的实际行为（CI 三平台绿只是间接证据）
 
 要复跑插件本体的判据，看 [`../REPRODUCE.md`](../REPRODUCE.md)。

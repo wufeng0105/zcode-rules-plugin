@@ -16,7 +16,7 @@ ZCode 里有两件互不相干的事，都需要你配置。
 
 麻烦在于两处配置各写各的，时间一长就漂移：你在权限里放行了 `git push`，却忘了在 `AGENTS.md` 里说明「推送前先问」，于是模型真的直接推了。
 
-这个插件把两处合成一份规则源（保存规则的 JSON 文件，默认在插件的 `rules.json`）：**你在面板里写一条规则，权限判定和行为提示同时更新。**
+这个插件把两处合成一份规则源（保存规则的 JSON 文件，放在插件数据目录的 `rules.json`）：**你在面板里写一条规则，权限判定和行为提示同时更新。**
 
 ## 三个核心概念
 
@@ -63,7 +63,7 @@ node <CLI> plugins list --verbose
 | 状态 | 看插件是否启用、规则几条、策略空不空、上次自检结果 |
 | 规则表 | 编辑规则 JSON，保存后自动投影并自检 |
 | 内容策略 | 一段自由文本，投影给模型读 |
-| 自检与版本 | 九项检查，查出问题在哪 |
+| 自检与版本 | 十项检查，查出问题在哪 |
 
 ### 升级
 
@@ -133,7 +133,7 @@ node <CLI> plugins install zcode-rules@zcode-rules-plugin
 - **hook 判定完全不受影响**——它读的是 `rules.json`，不是 `AGENTS.md`；
 - 面板里保存规则/策略也不会再把规则段写回来（模式是持久的）。
 
-怎么关：**插件详情页 → 配置 → 关掉「投影规则段」→ 重启 ZCode**（MCP server 启动时读取该配置）。生效后可在面板「自检与版本」里看到新增的一行 `projection-mode`，写明当前是开启还是关闭——不靠猜。
+怎么关：**设置 → 插件 → 已安装 → ZCode 规则 → 配置 → 关掉「投影规则段」→ 重启 ZCode**（MCP server 启动时读取该配置；插件市场里该插件的详情页也有同一块配置）。生效后可在面板「自检与版本」里看到新增的一行 `projection-mode`，写明当前是开启还是关闭——不靠猜。
 
 > 参数层还有一个一次性的口子：MCP 工具 `export_agents` 传 `projectRules: false` 只影响这一次调用，不改配置。
 
@@ -141,11 +141,15 @@ node <CLI> plugins install zcode-rules@zcode-rules-plugin
 
 排查顺序从最常见的开始。
 
-**一、这条命令本来就不会被询问。** ZCode 自带一份只读命令白名单（**74 个**：`ls`、`cat`、`echo`、`grep`、`find`、`rg`、`jq`、`head`、`tail`、`wc` 等），这些命令走免询问路径，**根本不进入权限询问环节**——hook 没有出场机会，你的规则自然不生效。
+### 这条命令本来就不会被询问
+
+ZCode 自带一份只读命令白名单（**74 个**：`ls`、`cat`、`echo`、`grep`、`find`、`rg`、`jq`、`head`、`tail`、`wc` 等），这些命令走免询问路径，**根本不进入权限询问环节**——hook 没有出场机会，你的规则自然不生效。
 
 要测规则，得用**确实会被询问**的命令：`touch`、`rm`、`npm --version`、`git -C <目录> status`。完整白名单见 [docs/REPRODUCE.md](docs/REPRODUCE.md) 的「坑 1」。
 
-**二、正则转义写错。** `commandPattern` 是正则表达式。在 `rules.json` 这个 JSON 文件里，反斜杠要写两次；在面板的编辑框里直接写一次。
+### 正则转义写错
+
+`commandPattern` 是正则表达式。在 `rules.json` 这个 JSON 文件里，反斜杠要写两次；在面板的编辑框里直接写一次。
 
 | 你想匹配 | JSON 里写 | 落到规则源里是 |
 | --- | --- | --- |
@@ -155,7 +159,9 @@ node <CLI> plugins install zcode-rules@zcode-rules-plugin
 
 写错成 `"\\\\."`，落到规则源里是 `\\.`——匹配的是「一个反斜杠加任意字符」，永远命中不了。
 
-**三、锚点和实际命令形态不匹配。** 你以为命令是 `touch x.tmp`，实际传给 hook 的可能带引号和绝对路径：`touch "C:/path/x.tmp"`。用 `^touch$` 就永远匹配不上。改成 `touch .*` 这类宽松写法。
+### 锚点与命令形态不匹配
+
+你以为命令是 `touch x.tmp`，实际传给 hook 的可能带引号和绝对路径：`touch "C:/path/x.tmp"`。用 `^touch$` 就永远匹配不上。改成 `touch .*` 这类宽松写法。
 
 ## 可靠性与边界
 

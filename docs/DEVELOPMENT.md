@@ -138,7 +138,7 @@ manifest.userConfig.projectRules      # 声明（产品详情页「配置」里�
 | `rules_read` / `rules_write` | 读 / 写规则源（写会规范化） |
 | `content_policy_read` / `content_policy_write` | 读 / 写内容策略 |
 | `export_agents` | 把两段投影进 `AGENTS.md`。`projectRules:false` 时只投影策略段并摘除规则段；不传时用产品配置 `userConfig.projectRules`（v0.4.3），显式传参只覆盖本次调用。**策略段只能由它投影**——CLI 脚本只管规则段 |
-| `selfcheck_run` | 九项自检，只读 |
+| `selfcheck_run` | 十项自检，只读（含 `projection-mode` 投影模式） |
 
 **数据目录缺失时全部 fail-closed**：不猜路径、不用默认值，直接报错。这是有意的——猜错路径写到别处，比报错更糟。
 

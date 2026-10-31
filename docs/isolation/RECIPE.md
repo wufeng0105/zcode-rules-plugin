@@ -132,6 +132,6 @@ node ../../docs/isolation/tools/run-with-fingerprint.mjs --label <label> -- node
 
 ## 七、这套工具在哪些判据里被用到
 
-`../REPRODUCE.md` 里「第三类：需要真实 ZCode + 真实会话」的判据，全部要求经这个包壳跑。具体是哪几条、怎么跑，看 [`../REPRODUCE.md`](../REPRODUCE.md) 第二节。
+`../REPRODUCE.md` 里「第三类：需要真实 ZCode + 真实会话」的判据，全部要求经这个包壳跑。具体是哪几条、怎么跑，看 [`../REPRODUCE.md`](../REPRODUCE.md) 的「三类判据，跑法不同」一节。
 
 判断这些判据是否满足，看 [`../DOD.md`](../DOD.md)；验证过程与证据强度，看 [`../VERIFICATION.md`](../VERIFICATION.md)。
