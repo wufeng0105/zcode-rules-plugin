@@ -88,13 +88,19 @@ export const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "export_agents",
     description:
-      "把规则与内容策略投影到 AGENTS.md 的两个命名哨兵段（zcode-rules / zcode-content-policy）。缺文件则创建只含两段的文件；返回动作摘要，不返回全文。",
+      "把规则与内容策略投影到 AGENTS.md 的两个命名哨兵段（zcode-rules / zcode-content-policy）。缺文件则创建只含两段的文件；返回动作摘要，不返回全文。projectRules=false 时只投影 zcode-content-policy 段，并摘除已有的 zcode-rules 段（hook 判定读 rules.json，不受影响）。",
     inputSchema: {
       type: "object",
       properties: {
         agentsPath: {
           type: "string",
           description: "覆盖 AGENTS.md 路径（默认 os.homedir()/.zcode/AGENTS.md；测试用）",
+        },
+        projectRules: {
+          type: "boolean",
+          default: true,
+          description:
+            "是否把 zcode-rules 段投影进 AGENTS.md（默认 true）。false = 只投影内容策略段，并摘除已有的 zcode-rules 段；此时 rules 参数不读也不校验",
         },
         rules: RULES_INPUT_SCHEMA,
         policy: { type: "string", description: "覆盖内容策略文本；缺省读 dataDir/content-policy.json" },
@@ -239,8 +245,11 @@ async function callTool(name, args, context) {
       return { data: result, isError: !result.ok };
     }
     case "export_agents": {
+      // T68：projectRules===false 表示「本次不投影规则段」。此时不读、不要求 rules.json ——
+      // 它仍然被 hook 直接读取，与本工具无关；再要求一份规则文件属于自相矛盾的摩擦。
+      const projectRules = args.projectRules;
       let rules = args.rules;
-      if (rules === undefined) {
+      if (projectRules !== false && rules === undefined) {
         const loaded = loadRules(paths.rulesPath);
         if (!loaded.ok) {
           return { data: { errors: loaded.errors, ok: false }, isError: true };
@@ -265,7 +274,12 @@ async function callTool(name, args, context) {
         typeof args.agentsPath === "string" && args.agentsPath.trim() !== ""
           ? args.agentsPath
           : defaultAgentsPath();
-      const result = exportAgents({ agentsPath, policy, rules });
+      const result = exportAgents({
+        agentsPath,
+        policy,
+        rules,
+        ...(projectRules === undefined ? {} : { projectRules }),
+      });
       return { data: result, isError: !result.ok };
     }
     case "selfcheck_run": {
@@ -308,12 +322,15 @@ function validateToolArguments(name, rawArgs) {
       }
       return { text: rawArgs.text };
     case "export_agents": {
-      assertAllowedArgs(rawArgs, ["agentsPath", "policy", "rules"]);
+      assertAllowedArgs(rawArgs, ["agentsPath", "policy", "projectRules", "rules"]);
       if (rawArgs.agentsPath !== undefined && typeof rawArgs.agentsPath !== "string") {
         throw new RpcError(ERROR_CODES.invalidParams, "agentsPath 必须是字符串");
       }
       if (rawArgs.policy !== undefined && typeof rawArgs.policy !== "string") {
         throw new RpcError(ERROR_CODES.invalidParams, "policy 必须是字符串");
+      }
+      if (rawArgs.projectRules !== undefined && typeof rawArgs.projectRules !== "boolean") {
+        throw new RpcError(ERROR_CODES.invalidParams, "projectRules 必须是布尔值");
       }
       if (rawArgs.rules !== undefined && !isRecord(rawArgs.rules)) {
         throw new RpcError(ERROR_CODES.invalidParams, "rules 必须是对象");
@@ -321,6 +338,7 @@ function validateToolArguments(name, rawArgs) {
       return {
         ...(rawArgs.agentsPath === undefined ? {} : { agentsPath: rawArgs.agentsPath }),
         ...(rawArgs.policy === undefined ? {} : { policy: rawArgs.policy }),
+        ...(rawArgs.projectRules === undefined ? {} : { projectRules: rawArgs.projectRules }),
         ...(rawArgs.rules === undefined ? {} : { rules: rawArgs.rules }),
       };
     }

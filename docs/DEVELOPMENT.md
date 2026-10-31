@@ -73,9 +73,9 @@ scripts/
   check-docs.mjs          # 文档相对链接与仓库内路径检查
   smoke-upgrade.mjs       # 升级冒烟（隔离环境）
   probe-selfcheck.mjs     # 自检探针：打印每项 level/id/message
-  proof/                  # 三份判据驱动（路径全环境变量化）
+  proof/                  # 四份判据驱动（路径全环境变量化）
   tools-list-probe.mjs    # stdio MCP server 的可靠探针
-tests/                    # 175 例，零依赖
+tests/                    # 189 例，零依赖
 docs/                     # VERIFICATION / DOD / REPRODUCE / DEVELOPMENT / selfcheck / isolation
 FIDELITY.json             # 4 个参照实现的 sha256 基线
 .github/workflows/ci.yml  # CI：三平台 × 三步
@@ -118,7 +118,7 @@ FIDELITY.json             # 4 个参照实现的 sha256 基线
 | --- | --- |
 | `rules_read` / `rules_write` | 读 / 写规则源（写会规范化） |
 | `content_policy_read` / `content_policy_write` | 读 / 写内容策略 |
-| `export_agents` | 把两段投影进 `AGENTS.md`。**策略段只能由它投影**——CLI 脚本只管规则段 |
+| `export_agents` | 把两段投影进 `AGENTS.md`。`projectRules:false` 时只投影策略段并摘除规则段（v0.4.2）。**策略段只能由它投影**——CLI 脚本只管规则段 |
 | `selfcheck_run` | 九项自检，只读 |
 
 **数据目录缺失时全部 fail-closed**：不猜路径、不用默认值，直接报错。这是有意的——猜错路径写到别处，比报错更糟。

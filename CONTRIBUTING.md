@@ -38,7 +38,7 @@ node scripts/verify-fidelity.mjs
 ```pwsh
 node scripts/verify-fidelity.mjs    # 参照实现保真 + 副本一致性
 node scripts/check-docs.mjs         # 文档相对链接与仓库内路径
-node --test tests/                  # 175 例
+node --test tests/                  # 189 例
 ```
 
 这三条就是 CI 跑的全部内容。**没有依赖安装步骤**——这是刻意的，装了反而引入供应链面和失败源。

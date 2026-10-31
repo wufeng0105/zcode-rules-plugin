@@ -23,6 +23,7 @@ import {
   composeNamedSection,
   detectLineEnding,
   locateNamedSection,
+  removeNamedSection,
   sectionSnapshot,
   upsertNamedSection,
 } from "../rules/sections.mjs";
@@ -236,20 +237,35 @@ export function savePolicy(policyPath, text) {
  *   · 文件已存在 → 只替换段内，段外字节原样
  *   · 幂等：同输入二次导出字节不变
  * 返回动作摘要（不含全文），供 MCP 工具回传。
+ *
+ * T68（v0.4.2）：新增 `projectRules`。只有显式 `false` 才改变行为——
+ *   · 不投影规则段：只写 zcode-content-policy；
+ *   · 已有 zcode-rules 段会被**摘除**（removeNamedSection 外科式删段）：留着旧规则文本
+ *     会继续注入模型上下文，看起来像"当前规则"，比没有更糟；摘除只动段本身，段外字节原样。
+ *   · 该模式下 `rules` 既不读也不校验——本次导出的语义就是"不投影规则"，再要求一份合法
+ *     rules.json 属于自相矛盾的摩擦；hook 判定仍读 rules.json，与本函数无关。
+ *   · 规则段哨兵残缺/乱序/重复 → 拒绝写入并 ok=false（绝不盲删）。
  */
-export function exportAgents({ agentsPath, rules, policy } = {}) {
+export function exportAgents({ agentsPath, rules, policy, projectRules } = {}) {
   if (typeof agentsPath !== "string" || agentsPath.trim() === "") {
     return { ok: false, errors: ["agentsPath 必须是非空路径字符串"] };
   }
   const target = resolve(agentsPath);
-  const verdict = validateRules(rules);
-  if (!verdict.ok) {
-    return {
-      ok: false,
-      agentsPath: target,
-      errors: [`规则校验失败：${verdict.errors.join(" ; ")}`],
-      warnings: verdict.warnings,
-    };
+
+  // 判定式按约定写成 `!== false`：undefined / true / 其它值都保持原行为。
+  const projectRuleSection = projectRules !== false;
+
+  let verdict = null;
+  if (projectRuleSection) {
+    verdict = validateRules(rules);
+    if (!verdict.ok) {
+      return {
+        ok: false,
+        agentsPath: target,
+        errors: [`规则校验失败：${verdict.errors.join(" ; ")}`],
+        warnings: verdict.warnings,
+      };
+    }
   }
   if (policy !== undefined && policy !== null && typeof policy !== "string") {
     return { ok: false, agentsPath: target, errors: ["policy 必须是字符串"] };
@@ -261,14 +277,28 @@ export function exportAgents({ agentsPath, rules, policy } = {}) {
 
   let rulesStep;
   let policyStep;
+  let removedRulesSection = null;
   try {
-    // 规则段直接采用 rules-engine 的投影（逐字兼容），引擎识别为完整段后原样写入。
-    rulesStep = upsertNamedSection(before, SECTION_NAMES.RULES, renderAgentsSection(verdict.rules));
-    policyStep = upsertNamedSection(
-      rulesStep.content,
-      SECTION_NAMES.CONTENT_POLICY,
-      policyText,
-    );
+    let working = before;
+    if (projectRuleSection) {
+      // 规则段直接采用 rules-engine 的投影（逐字兼容），引擎识别为完整段后原样写入。
+      rulesStep = upsertNamedSection(before, SECTION_NAMES.RULES, renderAgentsSection(verdict.rules));
+      working = rulesStep.content;
+    } else {
+      const removed = removeNamedSection(before, SECTION_NAMES.RULES);
+      if (removed.action === "refused") {
+        // 与 upsert 的 fail-closed 同口径：段边界不唯一时不写任何字。
+        throw new Error(
+          `段 ${SECTION_NAMES.RULES} 的哨兵结构异常（${removed.reason}），拒绝摘除；请先人工核对段边界`,
+        );
+      }
+      rulesStep = { action: removed.action };
+      if (removed.action === "removed") {
+        removedRulesSection = { bytes: removed.removedBytes, sha256: removed.removedSha256 };
+      }
+      working = removed.content;
+    }
+    policyStep = upsertNamedSection(working, SECTION_NAMES.CONTENT_POLICY, policyText);
   } catch (error) {
     return {
       ok: false,
@@ -287,16 +317,18 @@ export function exportAgents({ agentsPath, rules, policy } = {}) {
     agentsPath: target,
     created: !exists,
     changed,
+    projectRules: projectRuleSection,
     actions: { policy: policyStep.action, rules: rulesStep.action },
+    ...(removedRulesSection === null ? {} : { removedRulesSection }),
     bytes: Buffer.byteLength(content, "utf8"),
     sha256: sha256(content),
     policyBytes: Buffer.byteLength(policyText, "utf8"),
-    ruleCount: verdict.rules.rules.length,
+    ruleCount: projectRuleSection ? verdict.rules.rules.length : 0,
     sections: {
       policy: projectSnapshot(content, SECTION_NAMES.CONTENT_POLICY),
       rules: projectSnapshot(content, SECTION_NAMES.RULES),
     },
-    warnings: verdict.warnings,
+    warnings: projectRuleSection ? verdict.warnings : [],
   };
 }
 
@@ -368,8 +400,14 @@ function inspectManualPermissionHooks(configPath) {
  */
 export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
   const checks = [];
-  const add = (id, level, message, detail) => {
-    checks.push({ id, level, message, ...(detail === undefined ? {} : { detail }) });
+  const add = (id, level, message, detail, extra) => {
+    checks.push({
+      id,
+      level,
+      message,
+      ...(detail === undefined ? {} : { detail }),
+      ...(extra ?? {}),
+    });
   };
 
   let paths;
@@ -487,12 +525,17 @@ export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
     if (rulesLoaded.ok && rulesLoaded.exists) {
       const snapshot = sectionSnapshot(agentsText, SECTION_NAMES.RULES);
       if (!snapshot.present) {
+        // T68：缺规则段可能是 export_agents 的 projectRules:false 有意为之（v0.4.2 新增）。
+        // 自检无法从磁盘区分"有意不投影"与"还没导出"，故保留 warn，并给出 absent 标记
+        // 让面板不再把它当成"被手改"。hook 判定读 rules.json，不受投影开关影响。
         add(
           "rules-section",
           "warn",
           snapshot.malformed
             ? `zcode-rules 段哨兵结构异常：${snapshot.reason}`
-            : "AGENTS.md 里没有 zcode-rules 段（尚未导出）",
+            : "AGENTS.md 里没有 zcode-rules 段（可能是 projectRules:false 的有意选择，或尚未导出；hook 判定不受影响）",
+          undefined,
+          snapshot.malformed ? {} : { absent: true },
         );
       } else {
         const actual = agentsText.slice(snapshot.begin, snapshot.end);
@@ -521,6 +564,8 @@ export function runSelfcheck({ agentsPath, dataDir, configPath } = {}) {
           snapshot.malformed
             ? `zcode-content-policy 段哨兵结构异常：${snapshot.reason}`
             : "AGENTS.md 里没有 zcode-content-policy 段（尚未导出）",
+          undefined,
+          snapshot.malformed ? {} : { absent: true },
         );
       } else {
         const actual = agentsText.slice(snapshot.begin, snapshot.end);

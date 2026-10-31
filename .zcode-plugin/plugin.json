@@ -1,6 +1,6 @@
 {
   "name": "zcode-rules",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "license": "MIT",
   "description": "ZCode 规则插件：一份规则源、两个出口（权限 hook 判定 + AGENTS.md 双哨兵投影）。One rules source, two exits: a PermissionRequest hook and dual-sentinel AGENTS.md projection.",
   "hooks": {

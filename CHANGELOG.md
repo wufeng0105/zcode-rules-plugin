@@ -1,3 +1,18 @@
+## 0.4.2（2026-10-31）
+
+**新增 `export_agents` 的 `projectRules` 开关（v0.4.2）**：只想让 `AGENTS.md` 带上内容策略、不想让规则表继续注入模型上下文时，可以不投影规则段。
+
+- **行为**：`projectRules` 缺省 `true`（与 0.4.1 逐字节一致）；显式 `false` 时**只投影 `zcode-content-policy` 段**，并**摘除**已有的 `zcode-rules` 段——外科式删段：只动哨兵段本身与其后一个换行，段外字节原样，CRLF/LF 保持。
+- **为什么摘除而不是留着**：留下的旧规则文本会继续作为会话上下文注入模型，看起来像"当前规则"，比没有更糟。规则真源 `rules.json` 不动，随时可以用缺省参数把规则段重新投影回来。
+- **fail-closed**：规则段哨兵残缺 / 乱序 / 重复时**拒绝摘除**并返回 `ok:false`，一个字节都不写（与既有 upsert 同口径，绝不盲删）。
+- **`rules` 免读免校验**：`projectRules:false` 时 `rules` 不参与投影，MCP 侧也不再要求 `rules.json` 存在（此前缺规则文件会直接失败）。`true` / 缺省路径的校验与报错完全不变。
+- **hook 判定不受影响**：`PermissionRequest` hook 直接读 `<data>/rules.json`，与 `AGENTS.md` 投影无关；本版未改任何 hook 文件（4 个参照实现仍逐字节一致）。
+- **返回值**：新增 `projectRules` 回显与 `removedRulesSection`（摘除时的字节数 + sha256）；`actions.rules` 增加取值 `removed` / `absent`；`ruleCount` 在 `false` 时为 0。
+- **自检 / 面板口径**：缺规则段时 `rules-section` 仍是 `warn`（"完全没导出"依然会被 `policy-section` 的 warn 抓住），但该 check 增加机器可读的 `absent: true`；面板据此不再把它显示成「AGENTS.md 段被你手动改过」。**代价如实说明**：磁盘上没有持久标记，自检无法区分「有意不投影」与「规则段被手工删除」。
+- **隔离验证**：新增随仓驱动 `scripts/proof/t68-project-rules.mjs`（路径全环境变量化，经 `docs/isolation/tools/run-with-fingerprint.mjs` 包壳运行）——隔离装 v0.4.2 → `projectRules:false` 导出 → 断言只剩策略段 → 用 7 条规则跑 hook 判定。
+- 版本号 `0.4.2`：`package.json`、`.zcode-plugin/plugin.json`、`marketplace.json`（version ×2 + `source.ref`）、面板字样（`panel-version` / `PANEL_VERSION`）同步。
+- 测试：新增 `tests/project-rules.test.mjs`（11 例）+ MCP 往返 2 例 + 面板静态 1 例；`node --test tests/` 共 **189 例全绿**（原 175 + 14）。
+
 ## 0.4.1（2026-10-31）
 
 **新增自检项 `data-dir`**（数据目录可见性）——P-8 真实升级的载体版本。
@@ -25,7 +40,7 @@
 - **内容策略对新会话生效**；用户级 = 所有工作区、每个会话。
 # CHANGELOG
 
-## 未发布（工程化，版本仍 0.4.1）
+## 未发布（工程化；本批条目随 0.4.1 发布，原样保留）
 
 M4 首批：P-8 升级模拟 + CI 门禁 + 保真/文档校验脚本。**不升版本、不打 tag**（本批只加工程化护栏，插件行为零变化）。
 

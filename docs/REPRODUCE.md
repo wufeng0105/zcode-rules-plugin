@@ -27,7 +27,7 @@ node --version          # 需要 v24
 ```pwsh
 node scripts/verify-fidelity.mjs    # 4 个参照实现逐字节 + 副本 ≡ 原件
 node scripts/check-docs.mjs         # 文档相对链接与仓库内路径
-node --test tests/                  # 175 例
+node --test tests/                  # 189 例
 ```
 
 期望三条都 exit 0。这是 CI 跑的三步，也是最容易复跑的部分。
@@ -47,7 +47,7 @@ node <CLI> plugins marketplace add wufeng0105/zcode-rules-plugin
 # 期望：Added marketplace zcode-rules-plugin (N plugins)
 
 node <CLI> plugins install zcode-rules@zcode-rules-plugin
-# 期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.1) [enabled]
+# 期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.2) [enabled]
 
 node <CLI> plugins list --verbose
 # 期望：出现 hooks: 1 与 mcp: plugin:zcode-rules:zcode-rules
@@ -82,13 +82,14 @@ node ../docs/isolation/tools/run-with-fingerprint.mjs --label my-label -- node <
 
 ## 三、仓库里现成的驱动脚本
 
-不用从零写。`../scripts/proof/` 下有三份，路径全部可用环境变量覆盖，直接跑或作为模板改：
+不用从零写。`../scripts/proof/` 下有四份，路径全部可用环境变量覆盖，直接跑或作为模板改：
 
 | 脚本 | 验什么 |
 | --- | --- |
 | `dod-remaining.mjs` | D-1 / D-2 / D-4 / D-7b / D-8 里那些能自动化的部分 |
 | `d3-real-session.mjs` | D-3：真实会话里 hook 是否放行 |
 | `p8-real-upgrade.mjs` | 换版本升级：真源保留 + 投影幂等 + 产物零改动 |
+| `t68-project-rules.mjs` | v0.4.2 的 `projectRules:false`：只投影内容策略段、摘除规则段，且 hook 7 条规则照常判定 |
 
 可覆盖的环境变量：
 

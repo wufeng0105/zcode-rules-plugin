@@ -228,6 +228,15 @@ test("手改提示：段不一致时显示醒目提示与两个真实动作 + �
   assert.match(PANEL, /backfillButton\.disabled = !canBackfill/);
 });
 
+test("手改提示：projectRules:false 的「规则段干净缺失」不弹手改横幅", () => {
+  // T68（v0.4.2）：export_agents 带 projectRules:false 导出后，AGENTS.md 里没有规则段是预期态。
+  // 自检仍如实报 warn（这样"完全没导出"不会被吞掉），但面板不能把它说成"被你手动改过"。
+  const source = PANEL.slice(PANEL.indexOf("function renderHandedit"));
+  assert.match(source.slice(0, 1200), /rulesCheck\?\.absent === true/);
+  assert.match(source.slice(0, 1200), /projectRulesOff/);
+  assert.match(source.slice(0, 1400), /if \(hit\.length === 0 \|\| projectRulesOff\)/);
+});
+
 test("屏 1：状态徽标显示 规则 N 条 / 策略 空|非空 / 自检 ok|warn|error", () => {
   assert.match(PANEL, /id="badge-rules"/);
   assert.match(PANEL, /id="badge-policy"/);

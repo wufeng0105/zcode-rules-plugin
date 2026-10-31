@@ -313,6 +313,53 @@ test("tools/call export_agents：缺省读数据目录，生成双哨兵 AGENTS.
   );
 });
 
+test("tools/call export_agents projectRules:false：不要求 rules.json，只写内容策略段", async () => {
+  const dataDir = tempDir();
+  const agentsPath = join(dataDir, "AGENTS.md");
+  await withSession(
+    async (session) => {
+      // 前提：数据目录里**没有** rules.json。projectRules:false 表示"本次不投影规则段"，
+      // 因此工具不该再要求一份它根本不用的规则文件。
+      assert.equal(existsSync(join(dataDir, "rules.json")), false);
+
+      const response = await session.request("tools/call", {
+        arguments: { agentsPath, policy: "策略：只投影这一段。", projectRules: false },
+        name: "export_agents",
+      });
+      assert.equal(response.result.isError, false);
+      const payload = toolPayload(response);
+      assert.equal(payload.ok, true);
+      assert.equal(payload.projectRules, false);
+      assert.equal(payload.actions.rules, "absent");
+      assert.equal(payload.sections.rules.present, false);
+
+      const text = readFileSync(agentsPath, "utf8");
+      assert.ok(text.includes("BEGIN zcode-content-policy"));
+      assert.ok(text.includes("策略：只投影这一段。"));
+      assert.equal(text.includes("BEGIN zcode-rules"), false);
+    },
+    { dataDir },
+  );
+});
+
+test("tools/call export_agents：projectRules 非布尔 → -32602，且不落盘", async () => {
+  const dataDir = tempDir();
+  const agentsPath = join(dataDir, "AGENTS.md");
+  await withSession(
+    async (session) => {
+      const response = await session.request("tools/call", {
+        arguments: { agentsPath, policy: "策略", projectRules: "no" },
+        name: "export_agents",
+      });
+      assert.ok(response.error, "非布尔 projectRules 必须以 JSON-RPC error 拒绝");
+      assert.equal(response.error.code, -32602);
+      assert.match(response.error.message, /projectRules/);
+      assert.equal(existsSync(agentsPath), false, "参数非法时不得创建文件");
+    },
+    { dataDir },
+  );
+});
+
 test("resources/list + resources/read：返回 ui/panel.html 原文", async () => {
   await withSession(async (session) => {
     const list = await session.request("resources/list");

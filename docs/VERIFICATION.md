@@ -152,7 +152,7 @@ CI（GitHub Actions，**三平台矩阵**：ubuntu / macos / windows，各 Node 
 ```pwsh
 node scripts/verify-fidelity.mjs   # 4 个参照实现逐字节 + 副本 ≡ 原件
 node scripts/check-docs.mjs        # 文档相对链接与仓库内路径
-node --test tests/                 # 175 例
+node --test tests/                 # 189 例
 ```
 
 三步都 exit 0。**没有一个 `npm install` 步骤**——这是刻意的，装了反而引入供应链面和失败源。

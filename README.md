@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/wufeng0105/zcode-rules-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/wufeng0105/zcode-rules-plugin/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![version](https://img.shields.io/badge/version-0.4.1-informational.svg)](https://github.com/wufeng0105/zcode-rules-plugin/releases)
+[![version](https://img.shields.io/badge/version-0.4.2-informational.svg)](https://github.com/wufeng0105/zcode-rules-plugin/releases)
 
 ## 它解决什么问题
 
@@ -42,7 +42,7 @@ ZCode 里有两件互不相干的事，都需要你配置。
 node <CLI> plugins marketplace add wufeng0105/zcode-rules-plugin
 
 # ② 安装
-#    期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.1) [enabled]
+#    期望：Installed plugin zcode-rules@zcode-rules-plugin (0.4.2) [enabled]
 node <CLI> plugins install zcode-rules@zcode-rules-plugin
 
 # ③ 确认宿主已加载 hook 与 MCP
@@ -151,7 +151,7 @@ node <CLI> plugins install zcode-rules@zcode-rules-plugin
 
 | 检查 | 结果 |
 | --- | --- |
-| 单元测试 | **175 例全过**，三平台（ubuntu / macos / windows）各跑一遍 |
+| 单元测试 | **189 例全过**，三平台（ubuntu / macos / windows）各跑一遍 |
 | 参照实现保真 | 4 个文件逐字节校验 sha256，且「副本 ≡ 原件」 |
 | 文档引用 | 全部相对链接与仓库内路径存在 |
 | 依赖 | 零。CI 里没有 `npm install` 这一步 |
@@ -210,9 +210,9 @@ node <CLI> plugins validate <repo>
 #    { "name": "my-market",
 #      "plugins": [{ "name": "zcode-rules",
 #                    "source": { "source": "directory", "path": "C:/path/to/zcode-rules-plugin" },
-#                    "version": "0.4.1" }] }
+#                    "version": "0.4.2" }] }
 
-# ③ 加入并安装 → 期望：Installed plugin zcode-rules@my-market (0.4.1) [enabled]
+# ③ 加入并安装 → 期望：Installed plugin zcode-rules@my-market (0.4.2) [enabled]
 node <CLI> plugins marketplace add ~/zcode-market
 node <CLI> plugins install zcode-rules@my-market
 ```
