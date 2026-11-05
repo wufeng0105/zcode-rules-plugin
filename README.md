@@ -5,6 +5,7 @@
 [![CI](https://github.com/wufeng0105/zcode-rules-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/wufeng0105/zcode-rules-plugin/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![version](https://img.shields.io/badge/version-0.4.3-informational.svg)](https://github.com/wufeng0105/zcode-rules-plugin/releases)
+[![M8ven Score](https://m8ven.ai/badge/mcp/wufeng0105-zcode-rules-plugin-x6t3ug?v=c1142ebc21a0e28797f554752858a49d)](https://m8ven.ai/mcp/wufeng0105-zcode-rules-plugin-x6t3ug?s=readme)
 
 ## 它解决什么问题
 
